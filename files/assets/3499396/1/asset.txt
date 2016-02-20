@@ -1,0 +1,17 @@
+/*void getAlbedo(inout psInternalData data) {
+    float textureChipSize = 1.0 / uTextureChipNum;
+    float u = fract($UV.x) * aColorIndex;
+    float v = fract($UV.y) * aColorIndex;
+    vec2 uv = vec2(u, v);
+    data.albedo = texture2DSRGB(texture_diffuseMap, uv).$CH;
+}*/
+
+uniform float uTextureChipNum;
+uniform sampler2D texture_diffuseMap;
+
+void getAlbedo(inout psInternalData data) {
+    float textureChipSize = 1.0 / uTextureChipNum;
+    float u = fract($UV.x) * aColorIndex;
+    float v = fract($UV.y) * aColorIndex;
+    data.albedo = gammaCorrectInput(saturate(vVertexColor.$CH));
+}
