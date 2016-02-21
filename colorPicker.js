@@ -70,7 +70,7 @@ canvas {\
 	left:0px;\
     right:0px;\
 	height:40px;\
-	width:200px;\
+	width:240px;\
 	background:transparent;\
 }\
 \
@@ -111,6 +111,16 @@ canvas {\
 #tool04>div {\
 	background-image:url("./files/images/tools01.png");\
 	background-position:-108px 0px;\
+}\
+\
+#tool05>div {\
+	background-image:url("./files/images/tools01.png");\
+	background-position:-144px 0px;\
+}\
+\
+#tool06>div {\
+	background-image:url("./files/images/tools01.png");\
+	background-position:-180px 0px;\
 }\
 \
 #tools li div.tools {\
@@ -185,7 +195,7 @@ style.innerHTML = colorPickerCss;
 // canvas要素をターゲットに使うため取得
 var canvas = $('#application-canvas');
 // 消しゴムやマジック選択などのツール類定義
-var tools = '<ul id="tools" class="fbox"><li class="tools_base" id="tool01" data-toolname="paint"><div class="tools"></div></li><li class="tools_base" id="tool02" data-toolname="addbox"><div class="tools"></div></li><li class="tools_base" id="tool03" data-toolname="erase"><div class="tools"></div></li><li class="tools_base" id="tool04" data-toolname="magickselect"><div class="tools"></div></li></ul>';
+var tools = '<ul id="tools" class="fbox"><li class="tools_base" id="tool01" data-toolname="paint"><div class="tools"></div></li><li class="tools_base" id="tool02" data-toolname="addbox"><div class="tools"></div></li><li class="tools_base" id="tool03" data-toolname="erase"><div class="tools"></div></li><li class="tools_base" id="tool04" data-toolname="magickselect"><div class="tools"></div></li><li class="tools_base" id="tool05" data-toolname="spoit"><div class="tools"></div></li><li class="tools_base" id="tool06" data-toolname="rangeselect"><div class="tools"></div></li></ul>';
 // 照準をツール類と一緒にしておく
 tools += '<div id="sighting"><div class="hor"></div><div class="ver"></div></div>';
 // カラーピッカーの色ボックスを定義
