@@ -195,7 +195,7 @@ style.innerHTML = colorPickerCss;
 // canvas要素をターゲットに使うため取得
 var canvas = $('#application-canvas');
 // 消しゴムやマジック選択などのツール類定義
-var tools = '<ul id="tools" class="fbox"><li class="tools_base" id="tool01" data-toolname="paint"><div class="tools"></div></li><li class="tools_base" id="tool02" data-toolname="addbox"><div class="tools"></div></li><li class="tools_base" id="tool03" data-toolname="erase"><div class="tools"></div></li><li class="tools_base" id="tool04" data-toolname="magickselect"><div class="tools"></div></li><li class="tools_base" id="tool05" data-toolname="spoit"><div class="tools"></div></li><li class="tools_base" id="tool06" data-toolname="rangeselect"><div class="tools"></div></li></ul>';
+var tools = '<ul id="tools" class="fbox"><li class="tools_base" id="tool01" data-toolname="paint"><div class="tools"></div></li><li class="tools_base" id="tool02" data-toolname="addbox"><div class="tools"></div></li><li class="tools_base" id="tool03" data-toolname="erase"><div class="tools"></div></li><li class="tools_base" id="tool04" data-toolname="magickselect"><div class="tools"></div></li><li class="tools_base" id="tool05" data-toolname="spuit"><div class="tools"></div></li><li class="tools_base" id="tool06" data-toolname="rangeselect"><div class="tools"></div></li></ul>';
 // 照準をツール類と一緒にしておく
 tools += '<div id="sighting"><div class="hor"></div><div class="ver"></div></div>';
 // カラーピッカーの色ボックスを定義
