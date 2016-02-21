@@ -240,7 +240,7 @@ function getMyColor(elm) {
 	var myColorCode = elm.css('background-color');
 	//console.log(myColorCode);
 	var arrColorCode = myColorCode.replace(/rgba\(/g,'').replace(/rgb\(/g,'').replace(/\)/g,'').replace(/ /g,'').split(',');
-	console.log(arrColorCode);
+	//console.log(arrColorCode);
 	if ( arrColorCode.length < 4 ) { arrColorCode[3] = 255; } else { arrColorCode[3] = Math.round( Number(arrColorCode[3]) * 255 ) ; }
 	
 	arrColorCode[0] = Number(arrColorCode[0]);
@@ -261,5 +261,5 @@ function resetScreenSize() {
 		height: "100%",
 		width: $(document).height() / 480 * 640
 	});
-	console.log($('canvas').width());
+	//console.log($('canvas').width());
 }
