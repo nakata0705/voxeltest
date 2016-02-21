@@ -38,7 +38,7 @@
 			' 0,#f0f 17%,#00f 33%,#0ff 50%,#0f0 67%,#ff0 83%,red 100%)}.cp-z-' +
 			'cursor{position:absolute;margin-top:-4px;width:100%;border:4px s' +
 			'olid #fff;border-color:transparent #fff;box-sizing:border-box}.cp-alpha-base{clear:both;width:100%;height:16px;margin:6px 0;backgroun' +
-			'd:url("https://playcanvas.com/api/files/assets/3340722/1/cp_bg.gif")}.' +
+			'd:url("./files/images/cp_bg.gif")}.' +
 			'cp-alpha{width:100%;height:16px;background:linear-gradient(to right,rgba(44,44,44,0),rgba(44,44,44,1))}.cp-alpha-cursor{' +
 			'position:absolute;margin-left:-4px;height:100%;border:4px solid ' +
 			'#fff;border-color:#fff transparent;box-sizing:border-box}',
