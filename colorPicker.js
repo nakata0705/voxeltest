@@ -94,22 +94,22 @@ canvas {\
 }\
 \
 #tool01>div {\
-	background-image:url("/files/images/tools01.png");\
+	background-image:url(("./files/images/tools01.png");\
 	background-position:0 0;\
 }\
 \
 #tool02>div {\
-	background-image:url("/files/images/tools01.png");\
+	background-image:url(("./files/images/tools01.png");\
 	background-position:-36px 0px;\
 }\
 \
 #tool03>div {\
-	background-image:url("/files/images/tools01.png");\
+	background-image:url(("./files/images/tools01.png");\
 	background-position:-72px 0px;\
 }\
 \
 #tool04>div {\
-	background-image:url("/files/images/tools01.png");\
+	background-image:url(("./files/images/tools01.png");\
 	background-position:-108px 0px;\
 }\
 \
@@ -141,7 +141,7 @@ canvas {\
 	height:36px;\
 	margin:0;\
 	border:2px solid #666666;\
-	background:url(/files/images/cp_bg.gif) 0 0 repeat;\
+	background:url("./files/images/cp_bg.gif") 0 0 repeat;\
 	float:left;\
 }\
 \
