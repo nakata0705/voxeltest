@@ -8,3 +8,5 @@
 * Run localserver.bat
 * Access http://localhost:51000/index.html
 * Debug and commmit/push to repo.
+
+For more detail, please refer http://developer.playcanvas.com/en/user-manual/scripting/workflow/
