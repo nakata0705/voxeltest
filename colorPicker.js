@@ -205,7 +205,7 @@ $('.tools').click(function(e) {
 	$('li.tools_base').removeClass('selected');
 	$(this).parent().addClass('selected');
 	colorPicker.selectedTool = $(this).parent().data('toolname');
-	console.log(colorPicker.selectedTool);	
+	//console.log(colorPicker.selectedTool);	
 });
 
 // カラーボックスがクリックされたら.selectedをつけてカラーの値を変数に格納
