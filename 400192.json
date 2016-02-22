@@ -2414,6 +2414,12 @@
                                 	"name": "dayInSec",
                                 	"type": "number",
                                 	"value": 10
+                            	},
+                                "maxSkyboxIntensity": {
+                                	"defaultValue": 4,
+                                	"name": "maxSkyboxIntensity",
+                                	"type": "number",
+                                	"value": 4
                             	}
 							}, 
                             "attributesOrder": [
@@ -3681,7 +3687,7 @@
             "voxelEntity3.js"
         ], 
         "render": {
-            "exposure": 2, 
+            "exposure": 1, 
             "fog": "linear", 
             "fog_color": [
                 1, 
