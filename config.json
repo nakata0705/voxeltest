@@ -6,7 +6,7 @@
             "ammo.js"
         ], 
         "loading_screen_script": null, 
-        "resolution_mode": "AUTO", 
+        "resolution_mode": "FIXED", 
         "transparent_canvas": false, 
         "use_device_pixel_ratio": false, 
         "use_legacy_audio": false, 
@@ -491,7 +491,7 @@
                     0, 
                     0
                 ], 
-                "emissiveIntensity": 1, 
+                "emissiveIntensity": 0, 
                 "emissiveMap": 3499249, 
                 "emissiveMapChannel": "rgb", 
                 "emissiveMapOffset": [
@@ -1643,6 +1643,189 @@
                 "xl": "/api/assets/3542927/thumbnail/xlarge.jpg"
             }, 
             "type": "texture"
+        }, 
+        "3557144": {
+            "data": {
+                "alphaTest": 0, 
+                "ambient": [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "ambientTint": false, 
+                "aoMap": 0, 
+                "aoMapChannel": "r", 
+                "aoMapOffset": [
+                    0, 
+                    0
+                ], 
+                "aoMapTiling": [
+                    1, 
+                    1
+                ], 
+                "aoMapUv": 0, 
+                "aoMapVertexColor": false, 
+                "blendType": 3, 
+                "bumpMapFactor": 1, 
+                "conserveEnergy": true, 
+                "cubeMap": 0, 
+                "cubeMapProjection": 0, 
+                "cull": 1, 
+                "depthTest": true, 
+                "depthWrite": true, 
+                "diffuse": [
+                    1, 
+                    1, 
+                    1
+                ], 
+                "diffuseMap": 0, 
+                "diffuseMapChannel": "rgb", 
+                "diffuseMapOffset": [
+                    0, 
+                    0
+                ], 
+                "diffuseMapTiling": [
+                    1, 
+                    1
+                ], 
+                "diffuseMapTint": false, 
+                "diffuseMapUv": 0, 
+                "diffuseMapVertexColor": false, 
+                "emissive": [
+                    1, 
+                    1, 
+                    1
+                ], 
+                "emissiveIntensity": 10, 
+                "emissiveMap": 0, 
+                "emissiveMapChannel": "rgb", 
+                "emissiveMapOffset": [
+                    0, 
+                    0
+                ], 
+                "emissiveMapTiling": [
+                    1, 
+                    1
+                ], 
+                "emissiveMapTint": false, 
+                "emissiveMapUv": 0, 
+                "emissiveMapVertexColor": false, 
+                "fresnelFactor": 0, 
+                "fresnelModel": 0, 
+                "glossMap": 0, 
+                "glossMapChannel": "r", 
+                "glossMapOffset": [
+                    0, 
+                    0
+                ], 
+                "glossMapTiling": [
+                    1, 
+                    1
+                ], 
+                "glossMapUv": 0, 
+                "glossMapVertexColor": false, 
+                "heightMap": 0, 
+                "heightMapChannel": "r", 
+                "heightMapFactor": 1, 
+                "heightMapOffset": [
+                    0, 
+                    0
+                ], 
+                "heightMapTiling": [
+                    1, 
+                    1
+                ], 
+                "heightMapUv": 0, 
+                "lightMap": 0, 
+                "lightMapChannel": "rgb", 
+                "lightMapOffset": [
+                    0, 
+                    0
+                ], 
+                "lightMapTiling": [
+                    1, 
+                    1
+                ], 
+                "lightMapUv": 1, 
+                "lightMapVertexColor": false, 
+                "metalness": 1, 
+                "metalnessMap": 0, 
+                "metalnessMapChannel": "r", 
+                "metalnessMapOffset": [
+                    0, 
+                    0
+                ], 
+                "metalnessMapTiling": [
+                    1, 
+                    1
+                ], 
+                "metalnessMapTint": false, 
+                "metalnessMapUv": 0, 
+                "metalnessMapVertexColor": false, 
+                "normalMap": 0, 
+                "normalMapOffset": [
+                    0, 
+                    0
+                ], 
+                "normalMapTiling": [
+                    1, 
+                    1
+                ], 
+                "normalMapUv": 0, 
+                "occludeSpecular": 1, 
+                "opacity": 1, 
+                "opacityMap": 0, 
+                "opacityMapChannel": "r", 
+                "opacityMapOffset": [
+                    0, 
+                    0
+                ], 
+                "opacityMapTiling": [
+                    1, 
+                    1
+                ], 
+                "opacityMapUv": 0, 
+                "opacityMapVertexColor": false, 
+                "reflectivity": 1, 
+                "refraction": 0, 
+                "refractionIndex": 0.6666666666666666, 
+                "shader": "blinn", 
+                "shadowSampleType": 1, 
+                "shininess": 32, 
+                "specular": [
+                    0.23, 
+                    0.23, 
+                    0.23
+                ], 
+                "specularAntialias": true, 
+                "specularMap": 0, 
+                "specularMapChannel": "rgb", 
+                "specularMapOffset": [
+                    0, 
+                    0
+                ], 
+                "specularMapTiling": [
+                    1, 
+                    1
+                ], 
+                "specularMapTint": false, 
+                "specularMapUv": 0, 
+                "specularMapVertexColor": false, 
+                "sphereMap": 0, 
+                "useMetalness": false
+            }, 
+            "file": null, 
+            "has_thumbnail": false, 
+            "id": "3557144", 
+            "meta": null, 
+            "name": "Sun", 
+            "path": [
+                3231460
+            ], 
+            "preload": true, 
+            "revision": 1, 
+            "tags": [], 
+            "type": "material"
         }
     }
 }

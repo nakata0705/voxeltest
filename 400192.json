@@ -1601,12 +1601,12 @@
                     "enabled": true, 
                     "falloffMode": 0, 
                     "innerConeAngle": 40, 
-                    "intensity": 10.93, 
+                    "intensity": 7.74, 
                     "normalOffsetBias": 1, 
                     "outerConeAngle": 45, 
                     "range": 64, 
                     "shadowBias": 1, 
-                    "shadowDistance": 400, 
+                    "shadowDistance": 512, 
                     "shadowResolution": 2048, 
                     "type": "directional"
                 }
@@ -1614,16 +1614,16 @@
             "enabled": true, 
             "labels": [], 
             "name": "Light", 
-            "parent": "7b4c3626-b091-4153-a1a7-383582cf05f2", 
+            "parent": "81ffed43-436a-42b6-99fd-6f50daf688f9", 
             "position": [
-                30, 
-                30, 
-                5
+                0, 
+                0, 
+                0
             ], 
             "resource_id": "3fcb3243-06f0-434b-99a8-7c74933749e2", 
             "rotation": [
-                -50, 
-                200, 
+                90, 
+                0, 
                 0
             ], 
             "scale": [
@@ -2336,7 +2336,6 @@
                 "e048bf5b-15cb-4b4c-86e4-cd6c9daf1741", 
                 "3bfdd03f-d32b-4f5b-b777-982dbd9b4236", 
                 "3be45eb0-dd4e-467a-8e86-0340a90a2f6d", 
-                "3fcb3243-06f0-434b-99a8-7c74933749e2", 
                 "8c9d3fe9-201a-4cba-a3d7-d6263ec4c9a3", 
                 "a70e4c46-d968-4c43-9fef-ea6689a2f1ac", 
                 "27d88bd7-b100-4eed-b03e-192b0843a622", 
@@ -2344,7 +2343,8 @@
                 "1e4b867d-2dbc-44b9-963c-62336be4bfa4", 
                 "f63e4f7c-c70e-47d8-861c-e6fc0b1c38f5", 
                 "a84be270-c77f-4743-b7a3-9efe01eee489", 
-                "0fa4d9dc-b428-43df-b463-4e740397ebf8"
+                "0fa4d9dc-b428-43df-b463-4e740397ebf8", 
+                "81ffed43-436a-42b6-99fd-6f50daf688f9"
             ], 
             "components": {
                 "pack": {}, 
@@ -2381,6 +2381,70 @@
                 1
             ], 
             "template": null
+        }, 
+        "81ffed43-436a-42b6-99fd-6f50daf688f9": {
+            "children": [
+                "3fcb3243-06f0-434b-99a8-7c74933749e2"
+            ], 
+            "components": {
+                "model": {
+                    "asset": null, 
+                    "castShadows": false, 
+                    "castShadowsLightmap": true, 
+                    "enabled": true, 
+                    "lightmapSizeMultiplier": 1, 
+                    "lightmapped": false, 
+                    "materialAsset": 3557144, 
+                    "receiveShadows": false, 
+                    "type": "sphere"
+                }, 
+                "script": {
+                    "enabled": true, 
+                    "scripts": [
+                        {
+                            "attributes": {
+                                "sunDistance": {
+                                    "defaultValue": 256, 
+                                    "name": "sunDistance", 
+                                    "type": "number", 
+                                    "value": 256
+                                },
+                                "dayInSec": {
+                                	"defaultValue": 10,
+                                	"name": "dayInSec",
+                                	"type": "number",
+                                	"value": 10
+                            	}
+							}, 
+                            "attributesOrder": [
+                                "sunDistance", 
+                                "dayInSec"
+                            ], 
+                            "name": "sun", 
+                            "url": "sun.js"
+                        }
+                    ]
+                }
+            }, 
+            "enabled": true, 
+            "name": "Sun", 
+            "parent": "7b4c3626-b091-4153-a1a7-383582cf05f2", 
+            "position": [
+                128, 
+                128, 
+                0
+            ], 
+            "resource_id": "81ffed43-436a-42b6-99fd-6f50daf688f9", 
+            "rotation": [
+                0, 
+                0, 
+                0
+            ], 
+            "scale": [
+                32, 
+                32, 
+                32
+            ]
         }, 
         "8c9d3fe9-201a-4cba-a3d7-d6263ec4c9a3": {
             "children": [], 
@@ -3617,7 +3681,7 @@
             "voxelEntity3.js"
         ], 
         "render": {
-            "exposure": 4, 
+            "exposure": 2, 
             "fog": "linear", 
             "fog_color": [
                 1, 
@@ -3625,17 +3689,17 @@
                 1
             ], 
             "fog_density": 0.001, 
-            "fog_end": 4096, 
+            "fog_end": 16384, 
             "fog_start": 1, 
             "gamma_correction": 1, 
             "global_ambient": [
-                0.7529411764705882, 
-                0.7529411764705882, 
-                0.7529411764705882, 
+                0, 
+                0, 
+                0, 
                 1
             ], 
             "skybox": 3140749, 
-            "skyboxIntensity": 1, 
+            "skyboxIntensity": 6, 
             "skyboxMip": 3, 
             "tonemapping": 1
         }
