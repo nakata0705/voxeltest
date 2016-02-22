@@ -20,7 +20,7 @@ pc.script.create('sun', function (app) {
         	this.time += dt;
         	
         	var quat = new pc.Quat();
-        	quat.setFromEulerAngles(0, 0, 360 * this.time / this.dayInSec);        	
+        	quat.setFromEulerAngles(0, 0, -360 * this.time / this.dayInSec);        	
         	var position = new pc.Vec3(this.sunDistance, 0, 0);
         	position = quat.transformVector(position);
         	quat.setFromEulerAngles(30, 0, 0);        	
