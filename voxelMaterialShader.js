@@ -33,6 +33,23 @@ void getAlbedo(inout psInternalData data) {\n\
     data.albedo = texture2DSRGB(texture_emissiveMap, vec2(u, v)).$CH;\n\
 }\n';
 
+var fogLinearPS = '\
+uniform vec3 fog_color;\n\
+uniform float fog_start;\n\
+uniform float fog_end;\n\
+vec3 addFog(inout psInternalData data, vec3 color) {\n\
+    float depth = gl_FragCoord.z / gl_FragCoord.w;\n\
+    float fogFactor = (fog_end - depth) / (fog_end - fog_start);\n\
+    fogFactor = clamp(fogFactor, 0.0, 1.0);\n\
+    fogFactor = gammaCorrectInput(fogFactor);\n\
+    vec3 fog_color_with_light = data.diffuseLight;\n\
+    fog_color_with_light.r = clamp(fog_color_with_light.r, 0.0, 1.0);\n\
+    fog_color_with_light.g = clamp(fog_color_with_light.g, 0.0, 1.0);\n\
+    fog_color_with_light.b = clamp(fog_color_with_light.b, 0.0, 1.0);\n\
+    fog_color_with_light = fog_color * fog_color_with_light;\n\
+    return mix(fog_color_with_light, color, fogFactor);\n\
+}\n';
+
 pc.script.create('voxelMaterialShader', function (app) {
     // Creates a new VoxelMaterialShader instance
     var VoxelMaterialShader = function (entity) {
@@ -47,6 +64,7 @@ pc.script.create('voxelMaterialShader', function (app) {
             //material.chunks.basePS = basePSExt + material.chunks.basePS;
             material.chunks.emissiveTexPS = emissiveTexPS;
             material.chunks.diffuseVertPS = diffuseVertPS;
+            material.chunks.fogLinearPS = fogLinearPS;
             material.setParameter('uTextureChipNum', this.textureChipNum);
             material.update();
             this.time = 0;

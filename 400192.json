@@ -2420,11 +2420,19 @@
                                 	"name": "maxSkyboxIntensity",
                                 	"type": "number",
                                 	"value": 4
+                            	},
+                                "minSkyboxIntensity": {
+                                	"defaultValue": 0.1,
+                                	"name": "minSkyboxIntensity",
+                                	"type": "number",
+                                	"value": 0.0
                             	}
 							}, 
                             "attributesOrder": [
                                 "sunDistance", 
-                                "dayInSec"
+                                "dayInSec",
+                                "maxSkyboxIntensity",
+                                "minSkyboxIntensity"
                             ], 
                             "name": "sun", 
                             "url": "sun.js"
@@ -3695,7 +3703,7 @@
                 1
             ], 
             "fog_density": 0.001, 
-            "fog_end": 16384, 
+            "fog_end": 4096, 
             "fog_start": 1, 
             "gamma_correction": 1, 
             "global_ambient": [

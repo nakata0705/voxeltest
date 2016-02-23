@@ -1,6 +1,7 @@
 pc.script.attribute('sunDistance', 'number', 256);
 pc.script.attribute('dayInSec', 'number', 10);
 pc.script.attribute('maxSkyboxIntensity', 'number', 4);
+pc.script.attribute('minSkyboxIntensity', 'number', 0.1);
 
 pc.script.create('sun', function (app) {
     // Creates a new Sun instance
@@ -30,12 +31,11 @@ pc.script.create('sun', function (app) {
         	
         	if (position.y < 0) {
         		this.light.enabled = false;
-				app.scene.skyboxIntensity = 0;
+				app.scene.skyboxIntensity = this.minSkyboxIntensity;
         	}
         	else {
         		this.light.enabled = true;
-				app.scene.skyboxIntensity = this.maxSkyboxIntensity * position.y / (this.sunDistance * Math.sqrt(3) / 2);
-				console.log(app.scene.skyboxIntensity);
+				app.scene.skyboxIntensity = (this.maxSkyboxIntensity - this.minSkyboxIntensity) * position.y / this.sunDistance * Math.sqrt(3) / 2 + this.minSkyboxIntensity;
         	}
         	this.entity.lookAt(0, 0, 0);
         }
