@@ -49,82 +49,6 @@ pc.script.attribute('useVoxPalette', 'boolean', true, {
     displayName: "useVoxPalette"
 });
 
-pc.createMesh2 = function (device, positions, opts) {
-    // Check the supplied options and provide defaults for unspecified ones
-    var normals = opts && opts.normals !== undefined ? opts.normals : null;
-    var tangents = opts && opts.tangents !== undefined ? opts.tangents : null;
-    var colors = opts && opts.colors !== undefined ? opts.colors : null;
-    var uvs = opts && opts.uvs !== undefined ? opts.uvs : null;
-    var indices = opts && opts.indices !== undefined ? opts.indices : null;
-
-    var vertexDesc = [
-        { semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.ELEMENTTYPE_FLOAT32 }
-    ];
-    if (normals !== null) {
-        vertexDesc.push({ semantic: pc.SEMANTIC_NORMAL, components: 3, type: pc.ELEMENTTYPE_FLOAT32 });
-    }
-    if (tangents !== null) {
-        vertexDesc.push({ semantic: pc.SEMANTIC_TANGENT, components: 4, type: pc.ELEMENTTYPE_FLOAT32 });
-    }
-    if (colors !== null) {
-        vertexDesc.push({ semantic: pc.SEMANTIC_COLOR, components: 4, type: pc.ELEMENTTYPE_UINT8, normalize: true });
-        //vertexDesc.push({ semantic: pc.SEMANTIC_ATTR0, components: 4, type: pc.ELEMENTTYPE_UINT8 });
-    }
-    if (uvs !== null) {
-        vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.ELEMENTTYPE_FLOAT32 });
-    }
-    var vertexFormat = new pc.VertexFormat(device, vertexDesc);
-
-    // Create the vertex buffer
-    var numVertices  = positions.length / 3;
-    var vertexBuffer = new pc.VertexBuffer(device, vertexFormat, numVertices);
-
-    // Write the vertex data into the vertex buffer
-    var iterator = new pc.VertexIterator(vertexBuffer);
-    for (var i = 0; i < numVertices; i++) {
-        iterator.element[pc.SEMANTIC_POSITION].set(positions[i*3], positions[i*3+1], positions[i*3+2]);
-        if (normals !== null) {
-            iterator.element[pc.SEMANTIC_NORMAL].set(normals[i*3], normals[i*3+1], normals[i*3+2]);
-        }
-        if (tangents !== null) {
-            iterator.element[pc.SEMANTIC_TANGENT].set(tangents[i*4], tangents[i*4+1], tangents[i*4+2], tangents[i*4+3]);
-        }
-        if (colors !== null) {
-            iterator.element[pc.SEMANTIC_COLOR].set(colors[i*4], colors[i*4+1], colors[i*4+2], colors[i*4+3]);
-            //iterator.element[pc.SEMANTIC_ATTR0].set(colors[i*4], colors[i*4+1], colors[i*4+2], colors[i*4+3]);
-        }
-        if (uvs !== null) {
-            iterator.element[pc.SEMANTIC_TEXCOORD0].set(uvs[i*2], uvs[i*2+1]);
-        }
-        iterator.next();
-    }
-    iterator.end();
-
-    var indexBuffer = null;
-    var indexed = (indices !== null);
-    if (indexed) {
-        indexBuffer = new pc.IndexBuffer(device, pc.INDEXFORMAT_UINT16, indices.length);
-
-        // Read the indicies into the index buffer
-        var dst = new Uint16Array(indexBuffer.lock());
-        dst.set(indices);
-        indexBuffer.unlock();
-    }
-
-    var aabb = new pc.BoundingBox();
-    aabb.compute(positions);
-
-    var mesh = new pc.Mesh();
-    mesh.vertexBuffer = vertexBuffer;
-    mesh.indexBuffer[0] = indexBuffer;
-    mesh.primitive[0].type = pc.PRIMITIVE_TRIANGLES;
-    mesh.primitive[0].base = 0;
-    mesh.primitive[0].count = indexed ? indices.length : numVertices;
-    mesh.primitive[0].indexed = indexed;
-    mesh.aabb = aabb;
-    return mesh;
-};
-
 // Global voxel related function and variables.
 var vx2 = {};
 
@@ -150,15 +74,18 @@ vx2.QB_NEXTSLICEFLAG = 6;
 vx2.meshScale = 1.0;
 vx2.rigidBodyGap = 0.0 * vx2.meshScale;
 
-// Initialize MagicaVoxelDefaultPalette
+// MagicaVoxelDefaultPaletteを24bitカラーに変換する(下位24bitをRGBAカラーとして予約)
 for (var i = 0; i < 255; i++) {
-    var rColor = (vx2.magicaVoxelDefaultPalette[i] & 0xfc000000) >>> (24 + 2);
-    var gColor = (vx2.magicaVoxelDefaultPalette[i] & 0x00fc0000) >>> (16 + 2);
-    var bColor = (vx2.magicaVoxelDefaultPalette[i] & 0x0000fc00) >>> (8 + 2);
-    var aColor = (vx2.magicaVoxelDefaultPalette[i] & 0x000000fc) >>> (2);
-    vx2.magicaVoxelDefaultPalette[i] = (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
+    vx2.magicaVoxelDefaultPalette[i] = vx2.convert32bitRGBAto24bitRGBA(vx2.magicaVoxelDefaultPalette[i]);
 }
 
+vx2.convert32bitRGBAto24bitRGBA = function(color) {
+	var aColor = (data & 0xfc000000) >>> (24 + 2);
+	var bColor = (data & 0x00fc0000) >>> (16 + 2);
+	var gColor = (data & 0x0000fc00) >>> (8 + 2);
+	var rColor = (data & 0x000000fc) >>> (2);                    
+    return (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
+};
 
 vx2.removeRigidBodies = function(targetEntity, center, distance, app) {
     if (targetEntity.chunkerObject === undefined) {
@@ -449,7 +376,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
 
             // Convert Voxel.js mesh information to PlayCanvas mesh info
             playCanvasMesh = { indices: indices, positions: positions, normals: normals, colors: colors, uvs: uvs, tangents: tangents };
-            mesh = pc.createMesh2(app.graphicsDevice, playCanvasMesh.positions, {
+            mesh = pc.createMesh(app.graphicsDevice, playCanvasMesh.positions, {
                 normals: playCanvasMesh.normals,
                 colors: playCanvasMesh.colors,
                 uvs: playCanvasMesh.uvs,
@@ -496,7 +423,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
 
                 // Convert Voxel.js mesh information to PlayCanvas mesh info
                 playCanvasMesh = { indices: indices, positions: positions, normals: normals, colors: colors };
-                mesh = pc.createMesh2(app.graphicsDevice, playCanvasMesh.positions, {
+                mesh = pc.createMesh(app.graphicsDevice, playCanvasMesh.positions, {
                     normals: playCanvasMesh.normals,
                     colors: playCanvasMesh.colors,
                     indices: playCanvasMesh.indices
@@ -889,7 +816,6 @@ pc.script.create('voxelEntity3', function (app) {
                             var rColor = (data & 0x000000fc) >>> (2);
                             
                             color = (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
-                            //color = (((data & 0xff000000) >>> 24) | ((data & 0x00ff0000) >>> 8) | ((data & 0x0000ff00) << 8) | ((data & 0x000000ff) << 24)) >>> 0; 
                             if (color !== 0x00) {
                                 chunker.voxelAtCoordinates(z, y, x, color, true);                                
                             }
