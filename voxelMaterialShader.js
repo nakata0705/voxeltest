@@ -10,7 +10,7 @@ pc.script.attribute('material', 'asset', [], {
     type: 'material'
 });
 
-var basePSExt = '\
+var glslExtensionPS = '\
 #extension GL_EXT_shader_texture_lod : enable\n\
 #extension GL_OES_standard_derivatives : enable\n';
 
@@ -19,7 +19,19 @@ vec3 getEmission(inout psInternalData data) {\n\
     return vec3(0.0, 0.0, 0.0);\n\
 }\n';
 
-var diffuseVertPS = '\
+var diffuseVertPSExt = '\
+uniform float uTextureChipNum;\n\
+uniform sampler2D texture_emissiveMap;\n\
+void getAlbedo(inout psInternalData data) {\n\
+    float voxelID = vVertexColor.a * 255.0;\n\
+    float voxelX = floor(voxelID / uTextureChipNum + 0.5);\n\
+    float voxelY = floor(mod(voxelID, uTextureChipNum) + 0.5);\n\
+    float textureChipSize = 1.0 / uTextureChipNum;\n\
+    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + textureChipSize * voxelX, fract(vUv0.y) * textureChipSize + textureChipSize * voxelY);\n\
+    data.albedo = texture2DGradEXT(texture_emissiveMap, wrappedUv, dFdx(vUv0), dFdy(vUv0)).$CH;\n\
+}\n';
+
+var diffuseVertPSNoExt = '\
 uniform float uTextureChipNum;\n\
 uniform sampler2D texture_emissiveMap;\n\
 void getAlbedo(inout psInternalData data) {\n\
@@ -29,7 +41,6 @@ void getAlbedo(inout psInternalData data) {\n\
     float textureChipSize = 1.0 / uTextureChipNum;\n\
     float u = fract(vUv0.x) * textureChipSize + textureChipSize * voxelX;\n\
     float v = fract(vUv0.y) * textureChipSize + textureChipSize * voxelY;\n\
-    //data.albedo = texture2DGradEXT(texture_emissiveMap, mod(vUv0, vec2(textureChipSize, textureChipSize)), dFdx(vUv0), dFdy(vUv0));\n\
     data.albedo = texture2DSRGB(texture_emissiveMap, vec2(u, v)).$CH;\n\
 }\n';
 
@@ -61,9 +72,14 @@ pc.script.create('voxelMaterialShader', function (app) {
         initialize: function () {
             // Initialize plasma shader chunk
             var material = app.assets.get(this.material).resource;
-            //material.chunks.basePS = basePSExt + material.chunks.basePS;
+            if (app.graphicsDevice.extTextureLod) {
+            	material.chunks.glslExtensionPS = glslExtensionPS;
+            	material.chunks.diffuseVertPS = diffuseVertPSExt;
+            }
+            else {
+            	material.chunks.diffuseVertPS = diffuseVertPSNoExt;
+          	}
             material.chunks.emissiveTexPS = emissiveTexPS;
-            material.chunks.diffuseVertPS = diffuseVertPS;
             material.chunks.fogLinearPS = fogLinearPS;
             material.setParameter('uTextureChipNum', this.textureChipNum);
             material.update();
