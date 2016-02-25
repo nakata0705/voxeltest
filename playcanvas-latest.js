@@ -1,11 +1,11 @@
 /*
- PlayCanvas Engine v0.182.0-dev revision 1cbd9e3
+ PlayCanvas Engine v0.182.0-dev revision 0407359
  http://playcanvas.com
  Copyright 2011-2016 PlayCanvas Ltd. All rights reserved.
  Do not distribute.
  Contains: https://github.com/tildeio/rsvp.js - see page for license information
 */
-var pc = {version:"0.182.0-dev", revision:"1cbd9e3", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"0.182.0-dev", revision:"0407359", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.")
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -5372,6 +5372,8 @@ pc.shaderChunks.glossTexPS = "uniform sampler2D texture_glossMap;\nvoid getGloss
 pc.shaderChunks.glossTexConstPS = "uniform sampler2D texture_glossMap;\nuniform float material_shininess;\nvoid getGlossiness(inout psInternalData data) {\n    data.glossiness = material_shininess * texture2D(texture_glossMap, $UV).$CH + 0.0000001;\n}\n\n";
 pc.shaderChunks.glossVertPS = "void getGlossiness(inout psInternalData data) {\n    data.glossiness = saturate(vVertexColor.$CH) + 0.0000001;\n}\n\n";
 pc.shaderChunks.glossVertConstPS = "uniform float material_shininess;\nvoid getGlossiness(inout psInternalData data) {\n    data.glossiness = material_shininess * saturate(vVertexColor.$CH) + 0.0000001;\n}\n\n";
+pc.shaderChunks.glslExtensionPS = "\n";
+pc.shaderChunks.glslExtensionVS = "\n";
 pc.shaderChunks.instancingVS = "\nattribute vec4 instance_line1;\nattribute vec4 instance_line2;\nattribute vec4 instance_line3;\nattribute vec4 instance_line4;\n\n";
 pc.shaderChunks.lightDiffuseLambertPS = "float getLightDiffuse(inout psInternalData data) {\n    return max(dot(data.normalW, -data.lightDirNormW), 0.0);\n}\n\n";
 pc.shaderChunks.lightmapSinglePS = "uniform sampler2D texture_lightMap;\nvoid addLightMap(inout psInternalData data) {\n    data.diffuseLight += $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n}\n\n";
@@ -6159,6 +6161,9 @@ pc.programlib.phong = {hashCode:function(str) {
     }
     chunks = customChunks
   }
+  if(chunks.glslExtensionVS) {
+    code += chunks.glslExtensionVS + "\n"
+  }
   code += chunks.baseVS;
   var mainShadowLight = -1;
   if(!options.noShadow) {
@@ -6315,7 +6320,11 @@ pc.programlib.phong = {hashCode:function(str) {
     }
   }
   var fshader;
-  code = options.forceFragmentPrecision ? "precision " + options.forceFragmentPrecision + " float;\n\n" : getSnippet(device, "fs_precision");
+  code = "";
+  if(chunks.glslExtensionPS) {
+    code += chunks.glslExtensionPS + "\n"
+  }
+  code += options.forceFragmentPrecision ? "precision " + options.forceFragmentPrecision + " float;\n\n" : getSnippet(device, "fs_precision");
   if(options.customFragmentShader) {
     fshader = code + options.customFragmentShader;
     return{attributes:attributes, vshader:vshader, fshader:fshader, tag:pc.SHADERTAG_MATERIAL}
@@ -7181,15 +7190,6 @@ pc.extend(pc, function() {
   var visibleSceneAabb = new pc.BoundingBox;
   var shadowMapCache = {};
   var shadowMapCubeCache = {};
-  function _isVisible(camera, meshInstance) {
-    meshPos = meshInstance.aabb.center;
-    if(!meshInstance._aabb._radius) {
-      meshInstance._aabb._radius = meshInstance._aabb.halfExtents.length()
-    }
-    tempSphere.center = meshPos;
-    tempSphere.radius = meshInstance._aabb._radius;
-    return camera._frustum.containsSphere(tempSphere)
-  }
   var frustumPoints = [];
   for(i = 0;i < 8;i++) {
     frustumPoints.push(new pc.Vec3)
@@ -7537,7 +7537,15 @@ pc.extend(pc, function() {
     this.fogColor = new Float32Array(3);
     this.ambientColor = new Float32Array(3)
   }
-  pc.extend(ForwardRenderer.prototype, {getShadowCamera:function(device, light) {
+  pc.extend(ForwardRenderer.prototype, {_isVisible:function(camera, meshInstance) {
+    meshPos = meshInstance.aabb.center;
+    if(!meshInstance._aabb._radius) {
+      meshInstance._aabb._radius = meshInstance._aabb.halfExtents.length()
+    }
+    tempSphere.center = meshPos;
+    tempSphere.radius = meshInstance._aabb._radius;
+    return camera._frustum.containsSphere(tempSphere)
+  }, getShadowCamera:function(device, light) {
     var shadowCam = light._shadowCamera;
     var shadowBuffer;
     if(shadowCam === null) {
@@ -7783,7 +7791,7 @@ pc.extend(pc, function() {
         meshInstance = drawCall;
         if(meshInstance.layer === pc.LAYER_WORLD) {
           if(camera.frustumCulling && drawCall.cull) {
-            visible = _isVisible(camera, meshInstance)
+            visible = this._isVisible(camera, meshInstance)
           }
           if(visible) {
             btype = meshInstance.material.blendType;
@@ -8009,7 +8017,7 @@ pc.extend(pc, function() {
             meshInstance = shadowCasters[j];
             visible = true;
             if(meshInstance.cull) {
-              visible = _isVisible(shadowCam, meshInstance)
+              visible = this._isVisible(shadowCam, meshInstance)
             }
             if(visible) {
               culled.push(meshInstance)
@@ -23091,6 +23099,7 @@ pc.extend(pc, function() {
   var bounds = new pc.BoundingBox;
   var lightBounds = new pc.BoundingBox;
   var tempSphere = {};
+  var lmMaterial;
   function collectModels(node, nodes, nodesMeshInstances, allNodes) {
     if(!node.enabled) {
       return
@@ -23311,33 +23320,31 @@ pc.extend(pc, function() {
       origCastShadows[node] = allNodes[node].model.castShadows;
       allNodes[node].model.castShadows = allNodes[node].model.data.castShadowsLightmap
     }
-    var origXform = [];
-    var origEnd = [];
-    var origAlpha = [];
-    var origAlphaOpaque = [];
-    var origAlphaPremul = [];
-    var origCull = [];
-    var origForceUv1 = [];
-    var origAmbient = [];
-    var origAmbientTint = [];
+    var origMat = [];
     var nodeBounds = [];
     var nodeTarg = [];
     var targ, targTmp;
+    var light, shadowCam;
     scene.updateShadersFunc(device);
     for(node = 0;node < nodes.length;node++) {
       rcv = nodesMeshInstances[node];
       for(i = 0;i < rcv.length;i++) {
         mat = rcv[i].material;
-        origXform.push(mat.chunks.transformVS);
-        origEnd.push(mat.chunks.endPS);
-        origAlpha.push(mat.chunks.outputAlphaPS);
-        origAlphaOpaque.push(mat.chunks.outputAlphaOpaquePS);
-        origAlphaPremul.push(mat.chunks.outputAlphaPremulPS);
-        origCull.push(mat.cull);
-        origForceUv1.push(mat.forceUv1);
-        origAmbient.push(mat.ambient);
-        origAmbientTint.push(mat.ambientTint)
+        origMat.push(mat)
       }
+    }
+    if(!lmMaterial) {
+      lmMaterial = new pc.PhongMaterial;
+      lmMaterial.chunks.transformVS = xformUv1;
+      lmMaterial.chunks.endPS = bakeLmEnd;
+      lmMaterial.ambient = new pc.Color(0, 0, 0);
+      lmMaterial.ambientTint = true;
+      lmMaterial.chunks.outputAlphaPS = "\n";
+      lmMaterial.chunks.outputAlphaOpaquePS = "\n";
+      lmMaterial.chunks.outputAlphaPremulPS = "\n";
+      lmMaterial.cull = pc.CULLFACE_NONE;
+      lmMaterial.forceUv1 = true;
+      lmMaterial.update()
     }
     for(node = 0;node < nodes.length;node++) {
       rcv = nodesMeshInstances[node];
@@ -23357,17 +23364,7 @@ pc.extend(pc, function() {
         m._shaderDefs &= ~pc.SHADERDEF_LM;
         m.mask = maskLightmap;
         m.deleteParameter("texture_lightMap");
-        mat = m.material;
-        mat.chunks.transformVS = xformUv1;
-        mat.chunks.endPS = bakeLmEnd;
-        mat.ambient = new pc.Color(0, 0, 0);
-        mat.ambientTint = true;
-        mat.chunks.outputAlphaPS = "\n";
-        mat.chunks.outputAlphaOpaquePS = "\n";
-        mat.chunks.outputAlphaPremulPS = "\n";
-        mat.cull = pc.CULLFACE_NONE;
-        mat.forceUv1 = true;
-        mat.update()
+        m.material = lmMaterial
       }
       targ = new pc.RenderTarget(device, lm, {depth:false});
       nodeTarg.push(targ)
@@ -23385,6 +23382,19 @@ pc.extend(pc, function() {
         lightBounds.halfExtents.x = tempSphere.radius;
         lightBounds.halfExtents.y = tempSphere.radius;
         lightBounds.halfExtents.z = tempSphere.radius
+      }
+      if(lights[i].getType() === pc.LIGHTTYPE_SPOT) {
+        light = lights[i];
+        shadowCam = this.renderer.getShadowCamera(device, light);
+        shadowCam._node.setPosition(light._node.getPosition());
+        shadowCam._node.setRotation(light._node.getRotation());
+        shadowCam._node.rotateLocal(-90, 0, 0);
+        shadowCam.setProjection(pc.PROJECTION_PERSPECTIVE);
+        shadowCam.setNearClip(light.getAttenuationEnd() / 1E3);
+        shadowCam.setFarClip(light.getAttenuationEnd());
+        shadowCam.setAspectRatio(1);
+        shadowCam.setFov(light.getOuterConeAngle() * 2);
+        this.renderer.updateCameraFrustum(shadowCam)
       }
       for(node = 0;node < nodes.length;node++) {
         rcv = nodesMeshInstances[node];
@@ -23411,6 +23421,18 @@ pc.extend(pc, function() {
           lmCamera.setOrthoHeight(frustumSize)
         }else {
           if(!lightBounds.intersects(bounds)) {
+            continue
+          }
+        }
+        if(lights[i].getType() === pc.LIGHTTYPE_SPOT) {
+          var nodeVisible = false;
+          for(j = 0;j < rcv.length;j++) {
+            if(this.renderer._isVisible(shadowCam, rcv[j])) {
+              nodeVisible = true;
+              break
+            }
+          }
+          if(!nodeVisible) {
             continue
           }
         }
@@ -23448,17 +23470,7 @@ pc.extend(pc, function() {
       for(i = 0;i < rcv.length;i++) {
         m = rcv[i];
         m.mask = maskBaked;
-        mat = m.material;
-        mat.chunks.transformVS = origXform[id];
-        mat.chunks.endPS = origEnd[id];
-        mat.chunks.outputAlphaPS = origAlpha[id];
-        mat.chunks.outputAlphaOpaquePS = origAlphaOpaque[id];
-        mat.chunks.outputAlphaPremulPS = origAlphaPremul[id];
-        mat.cull = origCull[id];
-        mat.forceUv1 = origForceUv1[id];
-        mat.ambient = origAmbient[id];
-        mat.ambientTint = origAmbientTint[id];
-        mat.update();
+        rcv[i].material = origMat[id];
         rcv[i].setParameter("texture_lightMap", lm);
         id++
       }
