@@ -73,6 +73,7 @@ vx2.QB_CODEFLAG = 2;
 vx2.QB_NEXTSLICEFLAG = 6;
 vx2.meshScale = 1.0;
 vx2.rigidBodyGap = 0.0 * vx2.meshScale;
+vx2.voxelIdOffset = 0x40000;
 
 vx2.convert32bitRGBAto24bitRGBA = function(color) {
 	var aColor = (color & 0xfc000000) >>> (24 + 2);
@@ -82,6 +83,20 @@ vx2.convert32bitRGBAto24bitRGBA = function(color) {
     return (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
 };
 
+vx2.convert24bitRGBAto8bitRGBAArray = function(color) {
+	return [ Math.round((((color >>> 18) & 0x3f) / 0x3f) * 0xff),
+			 Math.round((((color >>> 12) & 0x3f) / 0x3f) * 0xff),
+             Math.round((((color >>> 6) & 0x3f) / 0x3f) * 0xff),
+             Math.round(((color & 0x3f) / 0x3f) * 0xff) ];
+};
+
+vx2.convert32bitRGBAto8bitRGBAArray = function(color) {
+	return [ (color >>> 24) & 0xff,
+	         (color >>> 16) & 0xff,
+	         (color >>> 8) & 0xff,
+	         color & 0xff ];
+};
+               
 vx2.removeRigidBodies = function(targetEntity, center, distance, app) {
     if (targetEntity.chunkerObject === undefined) {
         return;
@@ -255,10 +270,17 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                 for (j = 0; j < 4; j++) {
                     // Set vertex color
                     if (isDataModel === true) {
-                        colors[chunkMesh.faces[i][j] * 4] = Math.round((((color >>> 18) & 0x3f) / 0x3f) * 0xff);
-                        colors[chunkMesh.faces[i][j] * 4 + 1] = Math.round((((color >>> 12) & 0x3f) / 0x3f) * 0xff);
-                        colors[chunkMesh.faces[i][j] * 4 + 2] = Math.round((((color >>> 6) & 0x3f) / 0x3f) * 0xff);
-                        colors[chunkMesh.faces[i][j] * 4 + 3] = Math.round(((color & 0x3f) / 0x3f) * 0xff);
+                    	if (color < vx2.voxelIdOffset) {
+                    		// Set 24bit RGBA color
+                    		uInt8RGBAArray = vx2.convert24bitRGBAto8bitRGBAArray(color);
+                        	colors[chunkMesh.faces[i][j] * 4] = uInt8RGBAArray[0];
+                        	colors[chunkMesh.faces[i][j] * 4 + 1] = uInt8RGBAArray[1];
+                        	colors[chunkMesh.faces[i][j] * 4 + 2] = uInt8RGBAArray[2];
+                        	colors[chunkMesh.faces[i][j] * 4 + 3] = uInt8RGBAArray[3];
+                        }
+                        else {
+                        	
+                        }
                     }
                     else {
                         colors[chunkMesh.faces[i][j] * 4] = color;
@@ -933,14 +955,20 @@ pc.script.create('voxelEntity3', function (app) {
                 index += childrenChunkContentSize;
             }
             
-            // Convert color index to 32bit RGBA color
+            // Convert color index to 24bit RGBA color if necessary
             for (var x = 0; x < chunker.originalDims[0]; ++x) {
                 for (var y = 0; y < chunker.originalDims[1]; ++y) {
                     for (var z = 0; z < chunker.originalDims[2]; ++z) {
                         var result = chunker.voxelAtCoordinates(x, y, z);
                         if (result[0] !== undefined && result[0] > 0 && result[0] <= 255) {
-                            if (this.useVoxPalette === true) chunker.voxelAtCoordinates(x, y, z, customPalette[result[0]]);
-                            else chunker.voxelAtCoordinates(x, y, z, result[0] + 0x40000);
+                            if (this.useVoxPalette === true) {
+                            	// Convert voxel value to 24bit RGBA color
+                            	chunker.voxelAtCoordinates(x, y, z, customPalette[result[0]]);
+                            }
+                            else {
+                            	// Move the voxel value to "index" voxel ID space
+                            	chunker.voxelAtCoordinates(x, y, z, result[0] + vx2.voxelIdOffset);
+                            }
                         }
                     }
                 }
