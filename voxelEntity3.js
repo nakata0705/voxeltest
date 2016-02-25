@@ -74,16 +74,11 @@ vx2.QB_NEXTSLICEFLAG = 6;
 vx2.meshScale = 1.0;
 vx2.rigidBodyGap = 0.0 * vx2.meshScale;
 
-// MagicaVoxelDefaultPaletteを24bitカラーに変換する(下位24bitをRGBAカラーとして予約)
-for (var i = 0; i < 255; i++) {
-    vx2.magicaVoxelDefaultPalette[i] = vx2.convert32bitRGBAto24bitRGBA(vx2.magicaVoxelDefaultPalette[i]);
-}
-
 vx2.convert32bitRGBAto24bitRGBA = function(color) {
-	var aColor = (data & 0xfc000000) >>> (24 + 2);
-	var bColor = (data & 0x00fc0000) >>> (16 + 2);
-	var gColor = (data & 0x0000fc00) >>> (8 + 2);
-	var rColor = (data & 0x000000fc) >>> (2);                    
+	var aColor = (color & 0xfc000000) >>> (24 + 2);
+	var bColor = (color & 0x00fc0000) >>> (16 + 2);
+	var gColor = (color & 0x0000fc00) >>> (8 + 2);
+	var rColor = (color & 0x000000fc) >>> (2);                    
     return (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
 };
 
@@ -639,6 +634,11 @@ vx2.registerStaticRigidBody = function(x, y, z, parentEntityScale, rigidBodyBoxS
     body.forceActivationState(pc.BODYFLAG_ACTIVE_TAG);
     body.activate();
 };
+
+// MagicaVoxelDefaultPaletteを24bitカラーに変換する(下位24bitをRGBAカラーとして予約)
+for (var i = 0; i < 255; i++) {
+    vx2.magicaVoxelDefaultPalette[i] = vx2.convert32bitRGBAto24bitRGBA(vx2.magicaVoxelDefaultPalette[i]);
+}
 
 pc.script.create('voxelEntity3', function (app) {    
     // Creates a new VoxelEntity instance
