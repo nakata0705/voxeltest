@@ -2356,13 +2356,20 @@
                             "attributesOrder": [], 
                             "name": "", 
                             "url": "hammer.min.js"
+                        },
+                        {
+                            "attributes": {}, 
+                            "attributesOrder": [], 
+                            "name": "", 
+                            "url": "resourcePack.js"
                         }
+
                     ]
                 }
             }, 
             "enabled": true, 
             "labels": [], 
-            "name": "ModelViewer", 
+            "name": "VoxelTest", 
             "parent": null, 
             "position": [
                 0, 

@@ -1461,8 +1461,8 @@
                 "addressu": "repeat", 
                 "addressv": "repeat", 
                 "anisotropy": 1, 
-                "magfilter": "linear", 
-                "minfilter": "linear_mip_linear", 
+                "magfilter": "nearest", 
+                "minfilter": "nearest_mip_nearest", 
                 "rgbm": false
             }, 
             "file": {

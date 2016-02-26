@@ -10,7 +10,7 @@ pc.script.attribute('material', 'asset', [], {
     type: 'material'
 });
 
-var glslExtensionPS = '\
+var extensionPS = '\
 #extension GL_EXT_shader_texture_lod : enable\n\
 #extension GL_OES_standard_derivatives : enable\n';
 
@@ -73,7 +73,7 @@ pc.script.create('voxelMaterialShader', function (app) {
             // Initialize plasma shader chunk
             var material = app.assets.get(this.material).resource;
             if (app.graphicsDevice.extTextureLod) {
-            	material.chunks.glslExtensionPS = glslExtensionPS;
+            	material.chunks.extensionPS = extensionPS;
             	material.chunks.diffuseVertPS = diffuseVertPSExt;
             }
             else {

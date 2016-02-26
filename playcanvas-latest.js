@@ -1,11 +1,11 @@
 /*
- PlayCanvas Engine v0.182.0-dev revision 0407359
+ PlayCanvas Engine v0.182.0-dev revision ca49cd4
  http://playcanvas.com
  Copyright 2011-2016 PlayCanvas Ltd. All rights reserved.
  Do not distribute.
  Contains: https://github.com/tildeio/rsvp.js - see page for license information
 */
-var pc = {version:"0.182.0-dev", revision:"0407359", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"0.182.0-dev", revision:"ca49cd4", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.")
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -2612,7 +2612,9 @@ pc.extend(pc, function() {
   var tmpVecF = new pc.Vec3;
   var BoundingBox = function BoundingBox(center, halfExtents) {
     this.center = center || new pc.Vec3(0, 0, 0);
-    this.halfExtents = halfExtents || new pc.Vec3(0.5, 0.5, 0.5)
+    this.halfExtents = halfExtents || new pc.Vec3(0.5, 0.5, 0.5);
+    this._min = new pc.Vec3;
+    this._max = new pc.Vec3
   };
   BoundingBox.prototype = {add:function(other) {
     var tc = this.center;
@@ -2698,9 +2700,9 @@ pc.extend(pc, function() {
     this.center.add2(max, min).scale(0.5);
     this.halfExtents.sub2(max, min).scale(0.5)
   }, getMin:function() {
-    return this.center.clone().sub(this.halfExtents)
+    return this._min.copy(this.center).sub(this.halfExtents)
   }, getMax:function() {
-    return this.center.clone().add(this.halfExtents)
+    return this._max.copy(this.center).add(this.halfExtents)
   }, containsPoint:function(point) {
     var min = this.getMin();
     var max = this.getMax();
@@ -5354,6 +5356,8 @@ pc.shaderChunks.emissiveVertConstPS = "uniform vec3 material_emissive;\nvec3 get
 pc.shaderChunks.endPS = "   gl_FragColor.rgb = combineColor(data);\n   gl_FragColor.rgb += getEmission(data);\n   gl_FragColor.rgb = addFog(data, gl_FragColor.rgb);\n   gl_FragColor.rgb = toneMap(gl_FragColor.rgb);\n   gl_FragColor.rgb = gammaCorrectOutput(gl_FragColor.rgb);\n";
 pc.shaderChunks.envConstPS = "vec3 processEnvironment(vec3 color) {\n    return color;\n}\n\n";
 pc.shaderChunks.envMultiplyPS = "uniform float skyboxIntensity;\nvec3 processEnvironment(vec3 color) {\n    return color * skyboxIntensity;\n}\n\n";
+pc.shaderChunks.extensionPS = "\n";
+pc.shaderChunks.extensionVS = "\n";
 pc.shaderChunks.fixCubemapSeamsNonePS = "vec3 fixSeams(vec3 vec, float mipmapIndex) {\n    return vec;\n}\n\nvec3 fixSeams(vec3 vec) {\n    return vec;\n}\n\nvec3 fixSeamsStatic(vec3 vec, float invRecMipSize) {\n    return vec;\n}\n";
 pc.shaderChunks.fixCubemapSeamsStretchPS = "vec3 fixSeams(vec3 vec, float mipmapIndex) {\n    float scale = 1.0 - exp2(mipmapIndex) / 128.0;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\nvec3 fixSeams(vec3 vec) {\n    float scale = 1.0 - 1.0 / 128.0;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\nvec3 fixSeamsStatic(vec3 vec, float invRecMipSize) {\n    float scale = invRecMipSize;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\n";
 pc.shaderChunks.fogExpPS = "uniform vec3 fog_color;\nuniform float fog_density;\nvec3 addFog(inout psInternalData data, vec3 color) {\n    float depth = gl_FragCoord.z / gl_FragCoord.w;\n    float fogFactor = exp(-depth * fog_density);\n    fogFactor = clamp(fogFactor, 0.0, 1.0);\n    return mix(fog_color, color, fogFactor);\n}\n";
@@ -5372,8 +5376,6 @@ pc.shaderChunks.glossTexPS = "uniform sampler2D texture_glossMap;\nvoid getGloss
 pc.shaderChunks.glossTexConstPS = "uniform sampler2D texture_glossMap;\nuniform float material_shininess;\nvoid getGlossiness(inout psInternalData data) {\n    data.glossiness = material_shininess * texture2D(texture_glossMap, $UV).$CH + 0.0000001;\n}\n\n";
 pc.shaderChunks.glossVertPS = "void getGlossiness(inout psInternalData data) {\n    data.glossiness = saturate(vVertexColor.$CH) + 0.0000001;\n}\n\n";
 pc.shaderChunks.glossVertConstPS = "uniform float material_shininess;\nvoid getGlossiness(inout psInternalData data) {\n    data.glossiness = material_shininess * saturate(vVertexColor.$CH) + 0.0000001;\n}\n\n";
-pc.shaderChunks.glslExtensionPS = "\n";
-pc.shaderChunks.glslExtensionVS = "\n";
 pc.shaderChunks.instancingVS = "\nattribute vec4 instance_line1;\nattribute vec4 instance_line2;\nattribute vec4 instance_line3;\nattribute vec4 instance_line4;\n\n";
 pc.shaderChunks.lightDiffuseLambertPS = "float getLightDiffuse(inout psInternalData data) {\n    return max(dot(data.normalW, -data.lightDirNormW), 0.0);\n}\n\n";
 pc.shaderChunks.lightmapSinglePS = "uniform sampler2D texture_lightMap;\nvoid addLightMap(inout psInternalData data) {\n    data.diffuseLight += $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n}\n\n";
@@ -5447,8 +5449,8 @@ pc.shaderChunks.reflectionSpherePS = "uniform mat4 matrix_view;\nuniform sampler
 pc.shaderChunks.reflectionSphereLowPS = "uniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvoid addReflection(inout psInternalData data) {\n\n    vec3 reflDirV = vNormalV;\n\n    vec2 sphereMapUv = reflDirV.xy * 0.5 + 0.5;\n    data.reflection += vec4($texture2DSAMPLE(texture_sphereMap, sphereMapUv).rgb, material_reflectivity);\n}\n\n";
 pc.shaderChunks.refractionPS = "uniform float material_refraction, material_refractionIndex;\n\nvec3 refract2(vec3 viewVec, vec3 Normal, float IOR) {\n    float vn = dot(viewVec, Normal);\n    float k = 1.0 - IOR * IOR * (1.0 - vn * vn);\n    vec3 refrVec = IOR * viewVec - (IOR * vn + sqrt(k)) * Normal;\n    return refrVec;\n}\n\nvoid addRefraction(inout psInternalData data) {\n\n    // use same reflection code with refraction vector\n    vec3 tmp = data.reflDirW;\n    vec4 tmp2 = data.reflection;\n    data.reflection = vec4(0.0);\n    data.reflDirW = refract2(-data.viewDirW, data.normalW, material_refractionIndex);\n\n    addReflection(data);\n\n    data.diffuseLight = mix(data.diffuseLight, data.reflection.rgb * data.albedo, material_refraction);\n    data.reflDirW = tmp;\n    data.reflection = tmp2;\n}\n\n";
 pc.shaderChunks.rgbmPS = "vec3 decodeRGBM(vec4 rgbm) {\n    vec3 color = (8.0 * rgbm.a) * rgbm.rgb;\n    return color * color;\n}\n\nvec3 texture2DRGBM(sampler2D tex, vec2 uv) {\n    return decodeRGBM(texture2D(tex, uv));\n}\n\nvec3 textureCubeRGBM(samplerCube tex, vec3 uvw) {\n    return decodeRGBM(textureCube(tex, uvw));\n}\n\n";
-pc.shaderChunks.shadowPS = "// ----- Unpacking -----\n\nfloat unpackFloat(vec4 rgbaDepth) {\n    const vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n    return dot(rgbaDepth, bitShift);\n}\n\nfloat unpackMask(vec4 rgbaDepth) {\n    return rgbaDepth.x;\n}\n\nfloat unpackFloatYZW(vec4 enc) {\n    const vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n    float v = dot(enc.yzw, bitShift.yzw);\n    return v;\n}\n\n\n// ----- Aux -----\n\nvec3 lessThan2(vec3 a, vec3 b) {\n    return clamp((b - a)*1000.0, 0.0, 1.0); // softer version\n}\n\nvec3 greaterThan2(vec3 a, vec3 b) {\n    return clamp((a - b)*1000.0, 0.0, 1.0); // softer version\n}\n\n\n// ----- Direct/Spot Sampling -----\n\nfloat getShadowHard(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    float depth = unpackFloat(texture2D(shadowMap, data.shadowCoord.xy));\n    return (depth < data.shadowCoord.z) ? 0.0 : 1.0;\n}\n\nfloat getShadowMask(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return unpackMask(texture2D(shadowMap, data.shadowCoord.xy));\n}\n\nfloat _xgetShadowPCF3x3(mat3 depthKernel, inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    mat3 shadowKernel;\n    vec3 shadowCoord = data.shadowCoord;\n    vec3 shadowZ = vec3(shadowCoord.z);\n    shadowKernel[0] = vec3(greaterThan(depthKernel[0], shadowZ));\n    shadowKernel[1] = vec3(greaterThan(depthKernel[1], shadowZ));\n    shadowKernel[2] = vec3(greaterThan(depthKernel[2], shadowZ));\n\n    vec2 fractionalCoord = fract( shadowCoord.xy * shadowParams.x );\n\n    shadowKernel[0] = mix(shadowKernel[0], shadowKernel[1], fractionalCoord.x);\n    shadowKernel[1] = mix(shadowKernel[1], shadowKernel[2], fractionalCoord.x);\n\n    vec4 shadowValues;\n    shadowValues.x = mix(shadowKernel[0][0], shadowKernel[0][1], fractionalCoord.y);\n    shadowValues.y = mix(shadowKernel[0][1], shadowKernel[0][2], fractionalCoord.y);\n    shadowValues.z = mix(shadowKernel[1][0], shadowKernel[1][1], fractionalCoord.y);\n    shadowValues.w = mix(shadowKernel[1][1], shadowKernel[1][2], fractionalCoord.y);\n\n    return dot( shadowValues, vec4( 1.0 ) ) * 0.25;\n}\n\nfloat _getShadowPCF3x3(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    vec3 shadowCoord = data.shadowCoord;\n\n    float xoffset = 1.0 / shadowParams.x; // 1/shadow map width\n    float dx0 = -xoffset;\n    float dx1 = xoffset;\n\n    mat3 depthKernel;\n    depthKernel[0][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx0)));\n    depthKernel[0][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, 0.0)));\n    depthKernel[0][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx1)));\n    depthKernel[1][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx0)));\n    depthKernel[1][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy));\n    depthKernel[1][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx1)));\n    depthKernel[2][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx0)));\n    depthKernel[2][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, 0.0)));\n    depthKernel[2][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx1)));\n\n    return _xgetShadowPCF3x3(depthKernel, data, shadowMap, shadowParams);\n}\n\nfloat getShadowPCF3x3(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return _getShadowPCF3x3(data, shadowMap, shadowParams);\n}\n\nfloat _getShadowPCF3x3_YZW(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    vec3 shadowCoord = data.shadowCoord;\n\n    float xoffset = 1.0 / shadowParams.x; // 1/shadow map width\n    float dx0 = -xoffset;\n    float dx1 = xoffset;\n\n    mat3 depthKernel;\n    depthKernel[0][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx0)));\n    depthKernel[0][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, 0.0)));\n    depthKernel[0][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx1)));\n    depthKernel[1][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx0)));\n    depthKernel[1][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy));\n    depthKernel[1][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx1)));\n    depthKernel[2][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx0)));\n    depthKernel[2][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, 0.0)));\n    depthKernel[2][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx1)));\n\n    return _xgetShadowPCF3x3(depthKernel, data, shadowMap, shadowParams);\n}\n\nfloat getShadowPCF3x3_YZW(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return _getShadowPCF3x3_YZW(data, shadowMap, shadowParams);\n}\n\n\n// ----- Point Sampling -----\n\nfloat getShadowPointHard(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams) {\n    return float(unpackFloat(textureCube(shadowMap, data.lightDirNormW)) > (length(data.lightDirW) * shadowParams.w + shadowParams.z));\n}\n\nfloat _getShadowPoint(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams, vec3 dir) {\n\n    vec3 tc = normalize(dir);\n    vec3 tcAbs = abs(tc);\n\n    vec4 dirX = vec4(1,0,0, tc.x);\n    vec4 dirY = vec4(0,1,0, tc.y);\n    float majorAxisLength = tc.z;\n    if ((tcAbs.x > tcAbs.y) && (tcAbs.x > tcAbs.z)) {\n        dirX = vec4(0,0,1, tc.z);\n        dirY = vec4(0,1,0, tc.y);\n        majorAxisLength = tc.x;\n    } else if ((tcAbs.y > tcAbs.x) && (tcAbs.y > tcAbs.z)) {\n        dirX = vec4(1,0,0, tc.x);\n        dirY = vec4(0,0,1, tc.z);\n        majorAxisLength = tc.y;\n    }\n\n    float shadowParamsInFaceSpace = ((1.0/shadowParams.x) * 2.0) * abs(majorAxisLength);\n\n    vec3 xoffset = (dirX.xyz * shadowParamsInFaceSpace);\n    vec3 yoffset = (dirY.xyz * shadowParamsInFaceSpace);\n    vec3 dx0 = -xoffset;\n    vec3 dy0 = -yoffset;\n    vec3 dx1 = xoffset;\n    vec3 dy1 = yoffset;\n\n    mat3 shadowKernel;\n    mat3 depthKernel;\n\n    depthKernel[0][0] = unpackFloat(textureCube(shadowMap, tc + dx0 + dy0));\n    depthKernel[0][1] = unpackFloat(textureCube(shadowMap, tc + dx0));\n    depthKernel[0][2] = unpackFloat(textureCube(shadowMap, tc + dx0 + dy1));\n    depthKernel[1][0] = unpackFloat(textureCube(shadowMap, tc + dy0));\n    depthKernel[1][1] = unpackFloat(textureCube(shadowMap, tc));\n    depthKernel[1][2] = unpackFloat(textureCube(shadowMap, tc + dy1));\n    depthKernel[2][0] = unpackFloat(textureCube(shadowMap, tc + dx1 + dy0));\n    depthKernel[2][1] = unpackFloat(textureCube(shadowMap, tc + dx1));\n    depthKernel[2][2] = unpackFloat(textureCube(shadowMap, tc + dx1 + dy1));\n\n    vec3 shadowZ = vec3(length(dir) * shadowParams.w + shadowParams.z);\n\n    shadowKernel[0] = vec3(lessThan2(depthKernel[0], shadowZ));\n    shadowKernel[1] = vec3(lessThan2(depthKernel[1], shadowZ));\n    shadowKernel[2] = vec3(lessThan2(depthKernel[2], shadowZ));\n\n    vec2 uv = (vec2(dirX.w, dirY.w) / abs(majorAxisLength)) * 0.5;\n\n    vec2 fractionalCoord = fract( uv * shadowParams.x );\n\n    shadowKernel[0] = mix(shadowKernel[0], shadowKernel[1], fractionalCoord.x);\n    shadowKernel[1] = mix(shadowKernel[1], shadowKernel[2], fractionalCoord.x);\n\n    vec4 shadowValues;\n    shadowValues.x = mix(shadowKernel[0][0], shadowKernel[0][1], fractionalCoord.y);\n    shadowValues.y = mix(shadowKernel[0][1], shadowKernel[0][2], fractionalCoord.y);\n    shadowValues.z = mix(shadowKernel[1][0], shadowKernel[1][1], fractionalCoord.y);\n    shadowValues.w = mix(shadowKernel[1][1], shadowKernel[1][2], fractionalCoord.y);\n\n    return 1.0 - dot( shadowValues, vec4( 1.0 ) ) * 0.25;\n}\n\nfloat getShadowPointPCF3x3(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams) {\n    return _getShadowPoint(data, shadowMap, shadowParams, data.lightDirW);\n}\n\nvoid normalOffsetPointShadow(inout psInternalData data, vec4 shadowParams) {\n    float distScale = length(data.lightDirW);\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0) * distScale; //0.02\n    vec3 dir = wPos - data.lightPosW;\n    data.lightDirW = dir;\n}\n\n";
-pc.shaderChunks.shadowCoordPS = "void _getShadowCoordOrtho(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    projPos.z += shadowParams.z;\n    projPos.z = min(projPos.z, 1.0);\n    data.shadowCoord = projPos.xyz;\n}\n\nvoid _getShadowCoordPersp(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    projPos.xyz /= projPos.w;\n    projPos.z += shadowParams.z;\n    data.shadowCoord = projPos.xyz;\n}\n\nvoid getShadowCoordOrtho(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPersp(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPerspNormalOffset(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    float distScale = abs(dot(vPositionW - data.lightPosW, data.lightDirNormW)); // fov?\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0) * distScale;\n\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, wPos);\n}\n\nvoid getShadowCoordOrthoNormalOffset(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0); //0.08\n\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, wPos);\n}\n\n";
+pc.shaderChunks.shadowPS = "// ----- Unpacking -----\n\nfloat unpackFloat(vec4 rgbaDepth) {\n    const vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n    return dot(rgbaDepth, bitShift);\n}\n\nfloat unpackMask(vec4 rgbaDepth) {\n    return rgbaDepth.x;\n}\n\nfloat unpackFloatYZW(vec4 enc) {\n    const vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n    float v = dot(enc.yzw, bitShift.yzw);\n    return v;\n}\n\n\n// ----- Aux -----\n\nvec3 lessThan2(vec3 a, vec3 b) {\n    return clamp((b - a)*1000.0, 0.0, 1.0); // softer version\n}\n\nvec3 greaterThan2(vec3 a, vec3 b) {\n    return clamp((a - b)*1000.0, 0.0, 1.0); // softer version\n}\n\n\n// ----- Direct/Spot Sampling -----\n\nfloat getShadowHard(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    float depth = unpackFloat(texture2D(shadowMap, data.shadowCoord.xy));\n    return (depth < data.shadowCoord.z) ? 0.0 : 1.0;\n}\n\nfloat getShadowSpotHard(inout psInternalData data, sampler2D shadowMap, vec4 shadowParams) {\n    float depth = unpackFloat(texture2D(shadowMap, data.shadowCoord.xy));\n    return (depth < (length(data.lightDirW) * shadowParams.w + shadowParams.z)) ? 0.0 : 1.0;\n}\n\nfloat getShadowMask(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return unpackMask(texture2D(shadowMap, data.shadowCoord.xy));\n}\n\nfloat _xgetShadowPCF3x3(mat3 depthKernel, inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    mat3 shadowKernel;\n    vec3 shadowCoord = data.shadowCoord;\n    vec3 shadowZ = vec3(shadowCoord.z);\n    shadowKernel[0] = vec3(greaterThan(depthKernel[0], shadowZ));\n    shadowKernel[1] = vec3(greaterThan(depthKernel[1], shadowZ));\n    shadowKernel[2] = vec3(greaterThan(depthKernel[2], shadowZ));\n\n    vec2 fractionalCoord = fract( shadowCoord.xy * shadowParams.x );\n\n    shadowKernel[0] = mix(shadowKernel[0], shadowKernel[1], fractionalCoord.x);\n    shadowKernel[1] = mix(shadowKernel[1], shadowKernel[2], fractionalCoord.x);\n\n    vec4 shadowValues;\n    shadowValues.x = mix(shadowKernel[0][0], shadowKernel[0][1], fractionalCoord.y);\n    shadowValues.y = mix(shadowKernel[0][1], shadowKernel[0][2], fractionalCoord.y);\n    shadowValues.z = mix(shadowKernel[1][0], shadowKernel[1][1], fractionalCoord.y);\n    shadowValues.w = mix(shadowKernel[1][1], shadowKernel[1][2], fractionalCoord.y);\n\n    return dot( shadowValues, vec4( 1.0 ) ) * 0.25;\n}\n\nfloat _getShadowPCF3x3(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    vec3 shadowCoord = data.shadowCoord;\n\n    float xoffset = 1.0 / shadowParams.x; // 1/shadow map width\n    float dx0 = -xoffset;\n    float dx1 = xoffset;\n\n    mat3 depthKernel;\n    depthKernel[0][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx0)));\n    depthKernel[0][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, 0.0)));\n    depthKernel[0][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx1)));\n    depthKernel[1][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx0)));\n    depthKernel[1][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy));\n    depthKernel[1][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx1)));\n    depthKernel[2][0] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx0)));\n    depthKernel[2][1] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, 0.0)));\n    depthKernel[2][2] = unpackFloat(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx1)));\n\n    return _xgetShadowPCF3x3(depthKernel, data, shadowMap, shadowParams);\n}\n\nfloat getShadowPCF3x3(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return _getShadowPCF3x3(data, shadowMap, shadowParams);\n}\n\nfloat getShadowSpotPCF3x3(inout psInternalData data, sampler2D shadowMap, vec4 shadowParams) {\n    data.shadowCoord.z = length(data.lightDirW) * shadowParams.w + shadowParams.z;\n    return _getShadowPCF3x3(data, shadowMap, shadowParams.xyz);\n}\n\nfloat _getShadowPCF3x3_YZW(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    vec3 shadowCoord = data.shadowCoord;\n\n    float xoffset = 1.0 / shadowParams.x; // 1/shadow map width\n    float dx0 = -xoffset;\n    float dx1 = xoffset;\n\n    mat3 depthKernel;\n    depthKernel[0][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx0)));\n    depthKernel[0][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, 0.0)));\n    depthKernel[0][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx0, dx1)));\n    depthKernel[1][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx0)));\n    depthKernel[1][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy));\n    depthKernel[1][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(0.0, dx1)));\n    depthKernel[2][0] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx0)));\n    depthKernel[2][1] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, 0.0)));\n    depthKernel[2][2] = unpackFloatYZW(texture2D(shadowMap, shadowCoord.xy + vec2(dx1, dx1)));\n\n    return _xgetShadowPCF3x3(depthKernel, data, shadowMap, shadowParams);\n}\n\nfloat getShadowPCF3x3_YZW(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return _getShadowPCF3x3_YZW(data, shadowMap, shadowParams);\n}\n\n\n// ----- Point Sampling -----\n\nfloat getShadowPointHard(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams) {\n    float depth = unpackFloat(textureCube(shadowMap, data.lightDirNormW));\n    return float(depth > length(data.lightDirW) * shadowParams.w + shadowParams.z);\n}\n\nfloat _getShadowPoint(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams, vec3 dir) {\n\n    vec3 tc = normalize(dir);\n    vec3 tcAbs = abs(tc);\n\n    vec4 dirX = vec4(1,0,0, tc.x);\n    vec4 dirY = vec4(0,1,0, tc.y);\n    float majorAxisLength = tc.z;\n    if ((tcAbs.x > tcAbs.y) && (tcAbs.x > tcAbs.z)) {\n        dirX = vec4(0,0,1, tc.z);\n        dirY = vec4(0,1,0, tc.y);\n        majorAxisLength = tc.x;\n    } else if ((tcAbs.y > tcAbs.x) && (tcAbs.y > tcAbs.z)) {\n        dirX = vec4(1,0,0, tc.x);\n        dirY = vec4(0,0,1, tc.z);\n        majorAxisLength = tc.y;\n    }\n\n    float shadowParamsInFaceSpace = ((1.0/shadowParams.x) * 2.0) * abs(majorAxisLength);\n\n    vec3 xoffset = (dirX.xyz * shadowParamsInFaceSpace);\n    vec3 yoffset = (dirY.xyz * shadowParamsInFaceSpace);\n    vec3 dx0 = -xoffset;\n    vec3 dy0 = -yoffset;\n    vec3 dx1 = xoffset;\n    vec3 dy1 = yoffset;\n\n    mat3 shadowKernel;\n    mat3 depthKernel;\n\n    depthKernel[0][0] = unpackFloat(textureCube(shadowMap, tc + dx0 + dy0));\n    depthKernel[0][1] = unpackFloat(textureCube(shadowMap, tc + dx0));\n    depthKernel[0][2] = unpackFloat(textureCube(shadowMap, tc + dx0 + dy1));\n    depthKernel[1][0] = unpackFloat(textureCube(shadowMap, tc + dy0));\n    depthKernel[1][1] = unpackFloat(textureCube(shadowMap, tc));\n    depthKernel[1][2] = unpackFloat(textureCube(shadowMap, tc + dy1));\n    depthKernel[2][0] = unpackFloat(textureCube(shadowMap, tc + dx1 + dy0));\n    depthKernel[2][1] = unpackFloat(textureCube(shadowMap, tc + dx1));\n    depthKernel[2][2] = unpackFloat(textureCube(shadowMap, tc + dx1 + dy1));\n\n    vec3 shadowZ = vec3(length(dir) * shadowParams.w + shadowParams.z);\n\n    shadowKernel[0] = vec3(lessThan2(depthKernel[0], shadowZ));\n    shadowKernel[1] = vec3(lessThan2(depthKernel[1], shadowZ));\n    shadowKernel[2] = vec3(lessThan2(depthKernel[2], shadowZ));\n\n    vec2 uv = (vec2(dirX.w, dirY.w) / abs(majorAxisLength)) * 0.5;\n\n    vec2 fractionalCoord = fract( uv * shadowParams.x );\n\n    shadowKernel[0] = mix(shadowKernel[0], shadowKernel[1], fractionalCoord.x);\n    shadowKernel[1] = mix(shadowKernel[1], shadowKernel[2], fractionalCoord.x);\n\n    vec4 shadowValues;\n    shadowValues.x = mix(shadowKernel[0][0], shadowKernel[0][1], fractionalCoord.y);\n    shadowValues.y = mix(shadowKernel[0][1], shadowKernel[0][2], fractionalCoord.y);\n    shadowValues.z = mix(shadowKernel[1][0], shadowKernel[1][1], fractionalCoord.y);\n    shadowValues.w = mix(shadowKernel[1][1], shadowKernel[1][2], fractionalCoord.y);\n\n    return 1.0 - dot( shadowValues, vec4( 1.0 ) ) * 0.25;\n}\n\nfloat getShadowPointPCF3x3(inout psInternalData data, samplerCube shadowMap, vec4 shadowParams) {\n    return _getShadowPoint(data, shadowMap, shadowParams, data.lightDirW);\n}\n\nvoid normalOffsetPointShadow(inout psInternalData data, vec4 shadowParams) {\n    float distScale = length(data.lightDirW);\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0) * distScale; //0.02\n    vec3 dir = wPos - data.lightPosW;\n    data.lightDirW = dir;\n}\n\n";
+pc.shaderChunks.shadowCoordPS = "void _getShadowCoordOrtho(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    projPos.z += shadowParams.z;\n    projPos.z = min(projPos.z, 1.0);\n    data.shadowCoord = projPos.xyz;\n}\n\nvoid _getShadowCoordPersp(inout psInternalData data, mat4 shadowMatrix, vec4 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    projPos.xyz /= projPos.w;\n    projPos.z += shadowParams.z;\n    data.shadowCoord = projPos.xyz;\n}\n\nvoid getShadowCoordOrtho(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPersp(inout psInternalData data, mat4 shadowMatrix, vec4 shadowParams) {\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPerspNormalOffset(inout psInternalData data, mat4 shadowMatrix, vec4 shadowParams) {\n    float distScale = abs(dot(vPositionW - data.lightPosW, data.lightDirNormW)); // fov?\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0) * distScale;\n\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, wPos);\n}\n\nvoid getShadowCoordOrthoNormalOffset(inout psInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    vec3 wPos = vPositionW + vNormalW * shadowParams.y * clamp(1.0 - dot(vNormalW, -data.lightDirNormW), 0.0, 1.0); //0.08\n\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, wPos);\n}\n\n";
 pc.shaderChunks.shadowCoordVS = "void getLightDirPoint(inout vsInternalData data, vec3 lightPosW) {\n    vec3 lightDirW = vPositionW - lightPosW;\n    data.lightDirNormW = normalize(lightDirW);\n    data.lightPosW = lightPosW;\n}\n\nvoid _getShadowCoordOrtho(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    vMainShadowUv = projPos;\n}\n\nvoid _getShadowCoordPersp(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams, vec3 wPos) {\n    vec4 projPos = shadowMatrix * vec4(wPos, 1.0);\n    vMainShadowUv = projPos;\n}\n\nvoid getShadowCoordOrtho(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPersp(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, vPositionW);\n}\n\nvoid getShadowCoordPerspNormalOffset(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    float distScale = abs(dot(vPositionW - data.lightPosW, data.lightDirNormW)); // fov?\n    vec3 wPos = vPositionW + data.normalW * shadowParams.y * clamp(1.0 - dot(data.normalW, -data.lightDirNormW), 0.0, 1.0) * distScale;\n\n    _getShadowCoordPersp(data, shadowMatrix, shadowParams, wPos);\n}\n\nvoid getShadowCoordOrthoNormalOffset(inout vsInternalData data, mat4 shadowMatrix, vec3 shadowParams) {\n    vec3 wPos = vPositionW + data.normalW * shadowParams.y * clamp(1.0 - dot(data.normalW, -data.lightDirNormW), 0.0, 1.0); //0.08\n\n    _getShadowCoordOrtho(data, shadowMatrix, shadowParams, wPos);\n}\n\n";
 pc.shaderChunks.shadowVSPS = "\nfloat getShadowHardVS(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    float depth = unpackFloat(texture2DProj(shadowMap, vMainShadowUv));\n    return (depth < min(vMainShadowUv.z + shadowParams.z, 1.0)) ? 0.0 : 1.0;\n}\n\nfloat getShadowMaskVS(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    return unpackMask(texture2DProj(shadowMap, vMainShadowUv));\n}\n\nfloat getShadowPCF3x3VS(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    data.shadowCoord = vMainShadowUv.xyz;\n    data.shadowCoord.z += shadowParams.z;\n    data.shadowCoord.xyz /= vMainShadowUv.w;\n    data.shadowCoord.z = min(data.shadowCoord.z, 1.0);\n    return _getShadowPCF3x3(data, shadowMap, shadowParams);\n}\n\nfloat getShadowPCF3x3_YZWVS(inout psInternalData data, sampler2D shadowMap, vec3 shadowParams) {\n    data.shadowCoord = vMainShadowUv.xyz;\n    data.shadowCoord.z += shadowParams.z;\n    data.shadowCoord.xyz /= vMainShadowUv.w;\n    data.shadowCoord.z = min(data.shadowCoord.z, 1.0);\n    return _getShadowPCF3x3_YZW(data, shadowMap, shadowParams);\n}\n\n";
 pc.shaderChunks.skyboxPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\n\nvoid main(void) {\n    gl_FragColor = textureCube(texture_cubeMap, fixSeams(vViewDir));\n}\n\n";
@@ -5832,11 +5834,7 @@ pc.programlib.depthrgba = {generateKey:function(device, options) {
     code += "uniform float light_radius;\n\n"
   }
   var chunks = pc.shaderChunks;
-  if(options.shadowType === pc.SHADOW_DEPTHMASK) {
-    code += chunks.packDepthMaskPS
-  }else {
-    code += chunks.packDepthPS
-  }
+  code += chunks.packDepthPS;
   code += getSnippet(device, "common_main_begin");
   if(options.opacityMap) {
     code += "    if (texture2D(texture_opacityMap, vUv0)." + options.opacityChannel + " < 0.25) discard;\n\n"
@@ -6097,7 +6095,7 @@ pc.programlib.phong = {hashCode:function(str) {
   }
 }, _nonPointShadowMapProjection:function(light, shadowCoordArgs) {
   if(!light.getNormalOffsetBias()) {
-    if(light.getType() == pc.LIGHTTYPE_SPOT) {
+    if(light.getType() === pc.LIGHTTYPE_SPOT) {
       return"   getShadowCoordPersp" + shadowCoordArgs
     }else {
       return"   getShadowCoordOrtho" + shadowCoordArgs
@@ -6161,8 +6159,8 @@ pc.programlib.phong = {hashCode:function(str) {
     }
     chunks = customChunks
   }
-  if(chunks.glslExtensionVS) {
-    code += chunks.glslExtensionVS + "\n"
+  if(chunks.extensionVS) {
+    code += chunks.extensionVS + "\n"
   }
   code += chunks.baseVS;
   var mainShadowLight = -1;
@@ -6170,7 +6168,7 @@ pc.programlib.phong = {hashCode:function(str) {
     for(i = 0;i < options.lights.length;i++) {
       lightType = options.lights[i].getType();
       if(options.lights[i].getCastShadows()) {
-        if(lightType !== pc.LIGHTTYPE_POINT) {
+        if(lightType === pc.LIGHTTYPE_DIRECTIONAL) {
           code += "uniform mat4 light" + i + "_shadowMatrixVS;\n";
           code += "uniform vec3 light" + i + "_shadowParamsVS;\n";
           code += "uniform vec3 light" + i + (lightType === pc.LIGHTTYPE_DIRECTIONAL ? "_directionVS" : "_positionVS") + ";\n";
@@ -6321,8 +6319,8 @@ pc.programlib.phong = {hashCode:function(str) {
   }
   var fshader;
   code = "";
-  if(chunks.glslExtensionPS) {
-    code += chunks.glslExtensionPS + "\n"
+  if(chunks.extensionPS) {
+    code += chunks.extensionPS + "\n"
   }
   code += options.forceFragmentPrecision ? "precision " + options.forceFragmentPrecision + " float;\n\n" : getSnippet(device, "fs_precision");
   if(options.customFragmentShader) {
@@ -6348,7 +6346,7 @@ pc.programlib.phong = {hashCode:function(str) {
     }
     if(options.lights[i].getCastShadows() && !options.noShadow) {
       code += "uniform mat4 light" + i + "_shadowMatrix;\n";
-      if(lightType === pc.LIGHTTYPE_POINT) {
+      if(lightType !== pc.LIGHTTYPE_DIRECTIONAL) {
         code += "uniform vec4 light" + i + "_shadowParams;\n"
       }else {
         code += "uniform vec3 light" + i + "_shadowParams;\n"
@@ -6609,21 +6607,11 @@ pc.programlib.phong = {hashCode:function(str) {
       code += "   data.atten *= getLightDiffuse(data);\n";
       if(light.getCastShadows() && !options.noShadow) {
         var shadowReadMode = null;
-        if(light._shadowType <= pc.SHADOW_DEPTHMASK) {
-          if(options.shadowSampleType === pc.SHADOWSAMPLE_HARD) {
-            shadowReadMode = "Hard"
-          }else {
-            if(light._shadowType === pc.SHADOW_DEPTH && options.shadowSampleType === pc.SHADOWSAMPLE_PCF3X3) {
-              shadowReadMode = "PCF3x3"
-            }else {
-              if(light._shadowType === pc.SHADOW_DEPTHMASK && options.shadowSampleType === pc.SHADOWSAMPLE_PCF3X3) {
-                shadowReadMode = "PCF3x3_YZW"
-              }else {
-                if(light._shadowType === pc.SHADOW_DEPTHMASK && options.shadowSampleType === pc.SHADOWSAMPLE_MASK) {
-                  shadowReadMode = "Mask"
-                }
-              }
-            }
+        if(options.shadowSampleType === pc.SHADOWSAMPLE_HARD) {
+          shadowReadMode = "Hard"
+        }else {
+          if(light._shadowType === pc.SHADOW_DEPTH && options.shadowSampleType === pc.SHADOWSAMPLE_PCF3X3) {
+            shadowReadMode = "PCF3x3"
           }
         }
         if(shadowReadMode !== null) {
@@ -6639,6 +6627,9 @@ pc.programlib.phong = {hashCode:function(str) {
             }else {
               shadowCoordArgs = "(data, light" + i + "_shadowMatrix, light" + i + "_shadowParams);\n";
               code += this._nonPointShadowMapProjection(options.lights[i], shadowCoordArgs)
+            }
+            if(lightType === pc.LIGHTTYPE_SPOT) {
+              shadowReadMode = "Spot" + shadowReadMode
             }
             code += "   data.atten *= getShadow" + shadowReadMode + "(data, light" + i + "_shadowMap, light" + i + "_shadowParams);\n"
           }
@@ -6796,9 +6787,9 @@ pc.extend(pc, function() {
   return{PostEffect:PostEffect, createFullscreenQuad:createFullscreenQuad, drawFullscreenQuad:drawFullscreenQuad}
 }());
 (function() {
-  var enums = {BLEND_SUBTRACTIVE:0, BLEND_ADDITIVE:1, BLEND_NORMAL:2, BLEND_NONE:3, BLEND_PREMULTIPLIED:4, BLEND_MULTIPLICATIVE:5, BLEND_ADDITIVEALPHA:6, BLEND_MULTIPLICATIVE2X:7, BLEND_SCREEN:8, FOG_NONE:"none", FOG_LINEAR:"linear", FOG_EXP:"exp", FOG_EXP2:"exp2", FRESNEL_NONE:0, FRESNEL_SCHLICK:2, LAYER_HUD:0, LAYER_GIZMO:1, LAYER_FX:2, LAYER_WORLD:3, LIGHTTYPE_DIRECTIONAL:0, LIGHTTYPE_POINT:1, LIGHTTYPE_SPOT:2, LIGHTFALLOFF_LINEAR:0, LIGHTFALLOFF_INVERSESQUARED:1, SHADOW_DEPTH:0, SHADOW_DEPTHMASK:1, 
-  SHADOWSAMPLE_HARD:0, SHADOWSAMPLE_PCF3X3:1, SHADOWSAMPLE_MASK:2, PARTICLESORT_NONE:0, PARTICLESORT_DISTANCE:1, PARTICLESORT_NEWER_FIRST:2, PARTICLESORT_OLDER_FIRST:3, PARTICLEMODE_GPU:0, PARTICLEMODE_CPU:1, EMITTERSHAPE_BOX:0, EMITTERSHAPE_SPHERE:1, PROJECTION_PERSPECTIVE:0, PROJECTION_ORTHOGRAPHIC:1, RENDERSTYLE_SOLID:0, RENDERSTYLE_WIREFRAME:1, RENDERSTYLE_POINTS:2, CUBEPROJ_NONE:0, CUBEPROJ_BOX:1, SPECULAR_PHONG:0, SPECULAR_BLINN:1, GAMMA_NONE:0, GAMMA_SRGB:1, GAMMA_SRGBFAST:2, TONEMAP_LINEAR:0, 
-  TONEMAP_FILMIC:1, SPECOCC_NONE:0, SPECOCC_AO:1, SPECOCC_GLOSSDEPENDENT:2, SHADERDEF_NOSHADOW:1, SHADERDEF_SKIN:2, SHADERDEF_UV0:4, SHADERDEF_UV1:8, SHADERDEF_VCOLOR:16, SHADERDEF_INSTANCING:32, SHADERDEF_LM:64, LINEBATCH_WORLD:0, LINEBATCH_OVERLAY:1, LINEBATCH_GIZMO:2, SHADOWUPDATE_NONE:0, SHADOWUPDATE_THISFRAME:1, SHADOWUPDATE_REALTIME:2};
+  var enums = {BLEND_SUBTRACTIVE:0, BLEND_ADDITIVE:1, BLEND_NORMAL:2, BLEND_NONE:3, BLEND_PREMULTIPLIED:4, BLEND_MULTIPLICATIVE:5, BLEND_ADDITIVEALPHA:6, BLEND_MULTIPLICATIVE2X:7, BLEND_SCREEN:8, FOG_NONE:"none", FOG_LINEAR:"linear", FOG_EXP:"exp", FOG_EXP2:"exp2", FRESNEL_NONE:0, FRESNEL_SCHLICK:2, LAYER_HUD:0, LAYER_GIZMO:1, LAYER_FX:2, LAYER_WORLD:3, LIGHTTYPE_DIRECTIONAL:0, LIGHTTYPE_POINT:1, LIGHTTYPE_SPOT:2, LIGHTFALLOFF_LINEAR:0, LIGHTFALLOFF_INVERSESQUARED:1, SHADOW_DEPTH:0, SHADOWSAMPLE_HARD:0, 
+  SHADOWSAMPLE_PCF3X3:1, SHADOWSAMPLE_MASK:2, PARTICLESORT_NONE:0, PARTICLESORT_DISTANCE:1, PARTICLESORT_NEWER_FIRST:2, PARTICLESORT_OLDER_FIRST:3, PARTICLEMODE_GPU:0, PARTICLEMODE_CPU:1, EMITTERSHAPE_BOX:0, EMITTERSHAPE_SPHERE:1, PROJECTION_PERSPECTIVE:0, PROJECTION_ORTHOGRAPHIC:1, RENDERSTYLE_SOLID:0, RENDERSTYLE_WIREFRAME:1, RENDERSTYLE_POINTS:2, CUBEPROJ_NONE:0, CUBEPROJ_BOX:1, SPECULAR_PHONG:0, SPECULAR_BLINN:1, GAMMA_NONE:0, GAMMA_SRGB:1, GAMMA_SRGBFAST:2, TONEMAP_LINEAR:0, TONEMAP_FILMIC:1, 
+  SPECOCC_NONE:0, SPECOCC_AO:1, SPECOCC_GLOSSDEPENDENT:2, SHADERDEF_NOSHADOW:1, SHADERDEF_SKIN:2, SHADERDEF_UV0:4, SHADERDEF_UV1:8, SHADERDEF_VCOLOR:16, SHADERDEF_INSTANCING:32, SHADERDEF_LM:64, LINEBATCH_WORLD:0, LINEBATCH_OVERLAY:1, LINEBATCH_GIZMO:2, SHADOWUPDATE_NONE:0, SHADOWUPDATE_THISFRAME:1, SHADOWUPDATE_REALTIME:2};
   pc.extend(pc, enums);
   pc.scene = {};
   pc.extend(pc.scene, enums)
@@ -7611,7 +7602,6 @@ pc.extend(pc, function() {
   }, dispatchGlobalLights:function(scene) {
     var i;
     this.mainLight = -1;
-    this._activeShadowLights = [];
     var scope = this.device.scope;
     this.ambientColor[0] = scene.ambientLight.r;
     this.ambientColor[1] = scene.ambientLight.g;
@@ -7649,7 +7639,6 @@ pc.extend(pc, function() {
         scope.resolve(light + "_shadowMap").setValue(shadowMap);
         scope.resolve(light + "_shadowMatrix").setValue(directional._shadowMatrix.data);
         scope.resolve(light + "_shadowParams").setValue([directional._shadowResolution, directional._normalOffsetBias, bias]);
-        this._activeShadowLights.push(directional);
         if(this.mainLight < 0) {
           scope.resolve(light + "_shadowMatrixVS").setValue(directional._shadowMatrix.data);
           scope.resolve(light + "_shadowParamsVS").setValue([directional._shadowResolution, directional._normalOffsetBias, bias]);
@@ -7688,8 +7677,7 @@ pc.extend(pc, function() {
         shadowMap = this.device.extDepthTexture ? point._shadowCamera._renderTarget._depthTexture : point._shadowCamera._renderTarget.colorBuffer;
         scope.resolve(light + "_shadowMap").setValue(shadowMap);
         scope.resolve(light + "_shadowMatrix").setValue(point._shadowMatrix.data);
-        scope.resolve(light + "_shadowParams").setValue([point._shadowResolution, point._normalOffsetBias, point._shadowBias, 1 / point.getAttenuationEnd()]);
-        this._activeShadowLights.push(point)
+        scope.resolve(light + "_shadowParams").setValue([point._shadowResolution, point._normalOffsetBias, point._shadowBias, 1 / point.getAttenuationEnd()])
       }
       cnt++
     }
@@ -7709,14 +7697,14 @@ pc.extend(pc, function() {
       wtm.getY(spot._direction).scale(-1);
       scope.resolve(light + "_spotDirection").setValue(spot._direction.normalize().data);
       if(spot.getCastShadows()) {
+        var bias = spot._shadowBias * 20;
         shadowMap = this.device.extDepthTexture ? spot._shadowCamera._renderTarget._depthTexture : spot._shadowCamera._renderTarget.colorBuffer;
         scope.resolve(light + "_shadowMap").setValue(shadowMap);
         scope.resolve(light + "_shadowMatrix").setValue(spot._shadowMatrix.data);
-        scope.resolve(light + "_shadowParams").setValue([spot._shadowResolution, spot._normalOffsetBias, spot._shadowBias]);
-        this._activeShadowLights.push(spot);
+        scope.resolve(light + "_shadowParams").setValue([spot._shadowResolution, spot._normalOffsetBias, bias, 1 / spot.getAttenuationEnd()]);
         if(this.mainLight < 0) {
           scope.resolve(light + "_shadowMatrixVS").setValue(spot._shadowMatrix.data);
-          scope.resolve(light + "_shadowParamsVS").setValue([spot._shadowResolution, spot._normalOffsetBias, spot._shadowBias]);
+          scope.resolve(light + "_shadowParamsVS").setValue([spot._shadowResolution, spot._normalOffsetBias, bias, 1 / spot.getAttenuationEnd()]);
           scope.resolve(light + "_positionVS").setValue(spot._position.data);
           this.mainLight = i
         }
@@ -7959,7 +7947,9 @@ pc.extend(pc, function() {
             shadowCam.setNearClip(light.getAttenuationEnd() / 1E3);
             shadowCam.setFarClip(light.getAttenuationEnd());
             shadowCam.setAspectRatio(1);
-            shadowCam.setFov(light.getOuterConeAngle() * 2)
+            shadowCam.setFov(light.getOuterConeAngle() * 2);
+            this.viewPosId.setValue(shadowCam._node.getPosition().data);
+            this.lightRadiusId.setValue(light.getAttenuationEnd())
           }else {
             if(type === pc.LIGHTTYPE_POINT) {
               if(camera.frustumCulling) {
@@ -8080,13 +8070,13 @@ pc.extend(pc, function() {
               }else {
                 this.poseMatrixId.setValue(meshInstance.skinInstance.matrixPalette)
               }
-              if(type === pc.LIGHTTYPE_POINT) {
+              if(type !== pc.LIGHTTYPE_DIRECTIONAL) {
                 device.setShader(material.opacityMap ? this._depthProgSkinOpPoint[light._shadowType][opChan] : this._depthProgSkinPoint[light._shadowType])
               }else {
                 device.setShader(material.opacityMap ? this._depthProgSkinOp[light._shadowType][opChan] : this._depthProgSkin[light._shadowType])
               }
             }else {
-              if(type === pc.LIGHTTYPE_POINT) {
+              if(type !== pc.LIGHTTYPE_DIRECTIONAL) {
                 device.setShader(material.opacityMap ? this._depthProgStaticOpPoint[light._shadowType][opChan] : this._depthProgStaticPoint[light._shadowType])
               }else {
                 device.setShader(material.opacityMap ? this._depthProgStaticOp[light._shadowType][opChan] : this._depthProgStatic[light._shadowType])
@@ -8222,22 +8212,8 @@ pc.extend(pc, function() {
             parameter.scopeId.setValue(parameter.data)
           }
           if(!prevMaterial || lightMask !== prevLightMask) {
-            this._activeShadowLights = [];
             usedDirLights = this.dispatchDirectLights(scene, lightMask);
             this.dispatchLocalLights(scene, lightMask, usedDirLights)
-          }
-          if(material.shadowSampleType !== undefined) {
-            for(k = 0;k < this._activeShadowLights.length;k++) {
-              if(this._activeShadowLights[k]._shadowType === pc.SHADOW_DEPTHMASK) {
-                if(material.shadowSampleType === pc.SHADOWSAMPLE_MASK) {
-                  this._activeShadowLights[k]._shadowCamera._renderTarget.colorBuffer.minFilter = pc.FILTER_LINEAR;
-                  this._activeShadowLights[k]._shadowCamera._renderTarget.colorBuffer.magFilter = pc.FILTER_LINEAR
-                }else {
-                  this._activeShadowLights[k]._shadowCamera._renderTarget.colorBuffer.minFilter = pc.FILTER_NEAREST;
-                  this._activeShadowLights[k]._shadowCamera._renderTarget.colorBuffer.magFilter = pc.FILTER_NEAREST
-                }
-              }
-            }
           }
           this.alphaTestId.setValue(material.alphaTest);
           device.setBlending(material.blend);
@@ -23161,7 +23137,7 @@ pc.extend(pc, function() {
     this._stats = {renderPasses:0, lightmapCount:0, lightmapMem:0, renderTime:0, shadersLinked:0}
   };
   Lightmapper.prototype = {calculateLightmapSize:function(node, nodesMeshInstances) {
-    var sizeMult = this.scene.lightmapSizeMultiplier || 1;
+    var sizeMult = this.scene.lightmapSizeMultiplier || 16;
     var scale = tempVec;
     var parent;
     var area = {x:1, y:1, z:1, uv:1};

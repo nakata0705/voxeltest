@@ -1,0 +1,9 @@
+{
+    "__comment": "JimStoneCraft - 2014",
+    "parent": "block/fence_nse",
+    "textures": {
+        "texture": "blocks/fence_nether_brick",
+        "top": "blocks/fence_nether_brick_top",
+        "bottom": "blocks/fence_nether_brick_top"
+    }
+}
