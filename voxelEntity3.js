@@ -462,11 +462,12 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
         }
         
         var chunkRigidBodyNum = 0;
-        var volume = chunk.voxelArray.data.slice(0); // Copy the voxel data. Might be costly.
+        var volume = chunk.voxelArray.data;
+        var mark = [];
         var dimsX = chunk.voxelArray.shape[2],
             dimsY = chunk.voxelArray.shape[1],
             dimsXY = dimsX * dimsY;
-
+        
         // Sweep over Y axis
         var d = 1,
             u = (d + 1) % 3,
@@ -486,17 +487,33 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                     xu = x[u];
                     var a = 0x00000000;
                     if (xd === 0 || xd === dimsD - 1 || xu === 0 || xu === dimsU - 1 || xv === 0 || xv === dimsV - 1) {
-                        a = volume[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ];
+                        if (mark[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ] === undefined) {
+                        	a = volume[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ].v;
+                        }
+                        else {
+                        	a = 0;
+                        }
                     }
-                    else if (volume[x[2] - 1  + dimsX * x[1]          + dimsXY * x[0]          ] === 0x0000 ||
-                             volume[x[2] + 1  + dimsX * x[1]          + dimsXY * x[0]          ] === 0x0000 ||
-                             volume[x[2]      + dimsX * (x[1] + 1)    + dimsXY * x[0]          ] === 0x0000 ||
-                             volume[x[2]      + dimsX * (x[1] - 1)    + dimsXY * x[0]          ] === 0x0000 ||
-                             volume[x[2]      + dimsX * x[1]          + dimsXY * (x[0] - 1)    ] === 0x0000 ||
-                             volume[x[2]      + dimsX * x[1]          + dimsXY * (x[0] + 1)    ] === 0x0000 ) {
-                        a = volume[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ];
+                    else if ((volume[x[2] - 1  + dimsX * x[1]          + dimsXY * x[0]          ].v === 0 ||
+                    	      mark  [x[2] - 1  + dimsX * x[1]          + dimsXY * x[0]          ] !== undefined) ||
+                             (volume[x[2] + 1  + dimsX * x[1]          + dimsXY * x[0]          ].v === 0 ||
+                              mark  [x[2] + 1  + dimsX * x[1]          + dimsXY * x[0]          ] !== undefined) ||
+                             (volume[x[2]      + dimsX * (x[1] + 1)    + dimsXY * x[0]          ].v === 0 ||
+                              mark  [x[2]      + dimsX * (x[1] + 1)    + dimsXY * x[0]          ] !== undefined) ||
+                             (volume[x[2]      + dimsX * (x[1] - 1)    + dimsXY * x[0]          ].v === 0 ||
+                              mark  [x[2]      + dimsX * (x[1] - 1)    + dimsXY * x[0]          ] !== undefined) ||
+                             (volume[x[2]      + dimsX * x[1]          + dimsXY * (x[0] - 1)    ].v === 0 ||
+                              mark  [x[2]      + dimsX * x[1]          + dimsXY * (x[0] - 1)    ] !== undefined) ||
+                             (volume[x[2]      + dimsX * x[1]          + dimsXY * (x[0] + 1)    ].v === 0 ||
+                              mark  [x[2]      + dimsX * x[1]          + dimsXY * (x[0] + 1)    ] !== undefined)) {
+                        if (mark[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ] === undefined) {
+                        	a = volume[x[2]      + dimsX * x[1]          + dimsXY * x[0]          ].v;
+                        }
+                        else {
+                        	a = 0;
+                        }
                     }
-                    if (a !== 0x00000000) {
+                    if (a !== 0) {
                         // Found the origin point. Scan voxel and create as large as possible box rigid body
                         var xx = x.slice(0);
                         var max = [0, 0, 0];
@@ -510,8 +527,14 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                         while (xx[d] < max[d]) {
                             for(xx[v] = x[v]; xx[v] < max[v]; ++xx[v]) {
                                 for (xx[u] = x[u]; xx[u] < max[u]; ++xx[u]) {
-                                    var aa = volume[xx[2]      + dimsX * xx[1]          + dimsXY * xx[0]          ];
-                                    if (aa === 0x0000) {
+                                    var aa;
+                                    if (mark[xx[2]      + dimsX * xx[1]          + dimsXY * xx[0]          ] === undefined) {
+                                    	aa = volume[xx[2]      + dimsX * xx[1]          + dimsXY * xx[0]          ].v;
+                                    }
+                                    else {
+                                    	aa = 0;
+                                    }
+                                    if (aa === 0) {
                                         if (maxValid[u] === false) {
                                             // Found new uMax
                                             max[u] = xx[u];
@@ -555,11 +578,11 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                             ++xx[d];
                         }
 
-                        // Clear voxel value
+                        // Mark voxel as used
                         for (xx[d] = x[d]; xx[d] < max[d]; ++xx[d]) {
                             for (xx[v] = x[v]; xx[v] < max[v]; ++xx[v]) {
                                 for (xx[u] = x[u]; xx[u] < max[u]; ++xx[u]) {
-                                    volume[xx[2] + dimsX * xx[1] + dimsXY * xx[0]] = 0x0000;
+                                    mark[xx[2] + dimsX * xx[1] + dimsXY * xx[0]] = 1;
                                 }
                             }
                         }
@@ -579,6 +602,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
         }
         if (chunkRigidBodyNum === 0) {
             chunk.empty = true;
+            printDebugMessage("chunkRigidBodyNum: " + chunkRigidBodyNum, 1);
         }
         totalRigidBodyNum += chunkRigidBodyNum;
     }
@@ -705,7 +729,7 @@ pc.script.create('voxelEntity3', function (app) {
         },
                  
         createVoxelChunk: function(low, high, x, y, z) {
-        	return new Chunk(low, high, function(i, j, k) { return 0; });
+        	return new Chunk(low, high, function(i, j, k) { return { v: 0, f: 0 }; });
         },
                 
         createVoxelDataFromQbFile: function() {
@@ -779,7 +803,7 @@ pc.script.create('voxelEntity3', function (app) {
                             color = qbDataView.getUint32(index);
                             index += 4;
                             if (color !== 0x00) {
-                                chunker.voxelAtCoordinates(z, y, x, color, true);
+                                chunker.voxelAtCoordinates(z, y, x, { v: color, f: 0 }, true);
                             }
                         }
                     }
@@ -809,7 +833,7 @@ pc.script.create('voxelEntity3', function (app) {
                                 y = Math.floor(decompressIndex / chunker.originalDims[0]);
                                 decompressIndex += 1;
                                 if (color !== 0x00) {
-                                    chunker.voxelAtCoordinates(z, y, x, color, true);
+                                    chunker.voxelAtCoordinates(z, y, x, { v: color, f: 0}, true);
                                 }
                             }
                         }
@@ -824,7 +848,7 @@ pc.script.create('voxelEntity3', function (app) {
                             
                             color = (rColor << 18 | gColor << 12 | bColor << 6 | aColor) >>> 0;
                             if (color !== 0x00) {
-                                chunker.voxelAtCoordinates(z, y, x, color, true);                                
+                                chunker.voxelAtCoordinates(z, y, x, { v: color, f: 0}, true);                                
                             }
                         }
                     }
@@ -909,7 +933,7 @@ pc.script.create('voxelEntity3', function (app) {
                             var voxelColorIndex = dataView.getUint8(index, true);
                             index += 1;
                             printDebugMessage("    MagicaVoxel " + voxelIndex + " (" + voxelX + ", " + voxelY + ", " + voxelZ + ", " + voxelColorIndex + ")", 8);
-                            chunker.voxelAtCoordinates(chunker.originalDims[2] - voxelZ - 1, voxelY, voxelX, voxelColorIndex, true);
+                            chunker.voxelAtCoordinates(chunker.originalDims[2] - voxelZ - 1, voxelY, voxelX, { v: voxelColorIndex, f: 0}, true);
                         }
                         break;
                     case "RGBA":
@@ -945,14 +969,14 @@ pc.script.create('voxelEntity3', function (app) {
                 for (var y = 0; y < chunker.originalDims[1]; ++y) {
                     for (var z = 0; z < chunker.originalDims[2]; ++z) {
                         var result = chunker.voxelAtCoordinates(x, y, z);
-                        if (result[0] !== undefined && result[0] > 0 && result[0] <= 255) {
+                        if (result[0] !== undefined && result[0].v > 0 && result[0].v <= 255) {
                             if (this.useVoxPalette === true) {
                             	// Convert voxel value to 24bit RGBA color
-                            	chunker.voxelAtCoordinates(x, y, z, customPalette[result[0]]);
+                            	chunker.voxelAtCoordinates(x, y, z, { v: customPalette[result[0].v], f: 0});
                             }
                             else {
                             	// Move the voxel value to "index" voxel ID space
-                            	chunker.voxelAtCoordinates(x, y, z, result[0] + vx2.voxelIdOffset);
+                            	chunker.voxelAtCoordinates(x, y, z, { v: result[0].v + vx2.voxelIdOffset, f: 0});
                             }
                         }
                     }

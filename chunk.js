@@ -12,9 +12,7 @@ function Chunk(lo, hi, fn) {
 	hi[2]++;
 	var dims = [hi[2]-lo[2], hi[1]-lo[1], hi[0]-lo[0]]
 	
-	this.voxelArray = ndarray(new Uint32Array(dims[2] * dims[1] * dims[0]), dims);
-	this.voxelFlagArray = ndarray(new Uint32Array(dims[2] * dims[1] * dims[0]), dims);
-	this.voxelAttrArray = [];
+	this.voxelArray = ndarray(new Array(dims[2] * dims[1] * dims[0]), dims);
 	this.mesh = undefined;
 	this.rigidBodyArray = [];
   
@@ -32,5 +30,5 @@ Chunk.prototype = {
 	},
 	set: function(x, y, z, v) {
 		this.voxelArray.set(x, y, z, v);
-	}
+	}	
 };

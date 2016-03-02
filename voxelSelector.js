@@ -158,9 +158,9 @@ pc.script.create('voxelSelector', function (app) {
                         x = this.allSelectPointCoordinate[i][0];
                         y = this.allSelectPointCoordinate[i][1];
                         z = this.allSelectPointCoordinate[i][2];
-                        result = selectedDataChunker.voxelAtCoordinates(z, y, x, color, false);
+                        result = selectedDataChunker.voxelAtCoordinates(z, y, x, { v: color, f: 0 }, false);
                         if (result[1]) {
-                            undoEntry.push({chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true, x: x, y: y, z: z, color: color, prevColor: result[0]});
+                            undoEntry.push({chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true, x: x, y: y, z: z, color: color, prevColor: result[0].v});
                             if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                                 this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true});
                                 lastDirtyChunkArray.unshift(result[1]);
@@ -198,7 +198,7 @@ pc.script.create('voxelSelector', function (app) {
                     for (x = 0; x < copiedDataChunker.originalDims[0]; x++) {
                         for (y = 0; y < copiedDataChunker.originalDims[1]; y++) {
                             for (z = 0; z < copiedDataChunker.originalDims[2]; z++) {
-                                result = copiedDataChunker.voxelAtCoordinates(z, y, x, 0x00, false);
+                                result = copiedDataChunker.voxelAtCoordinates(z, y, x, { v: 0, f: 0 }, false);
                                 if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                                     this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: copiedDataChunker, entity: this.copiedVoxelEntity, isDataModel: true});
                                     lastDirtyChunkArray.unshift(result[1]);
@@ -216,15 +216,15 @@ pc.script.create('voxelSelector', function (app) {
                         x = this.allSelectPointCoordinate[i][0];
                         y = this.allSelectPointCoordinate[i][1];
                         z = this.allSelectPointCoordinate[i][2];
-                        result = selectedDataChunker.voxelAtCoordinates(z, y, x, color, false);
+                        result = selectedDataChunker.voxelAtCoordinates(z, y, x, { v: color, f: 0 }, false);
                         if (color === 0) {
-                            undoEntry.push({chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true, x: x, y: y, z: z, color: color, prevColor: result[0]});
+                            undoEntry.push({chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true, x: x, y: y, z: z, color: color, prevColor: result[0].v});
                         }
                         if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                             this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: selectedDataChunker, entity: this.selectPointTargetEntity, isDataModel: true});
                             lastDirtyChunkArray.unshift(result[1]);
                         }
-                        result = copiedDataChunker.voxelAtCoordinates(z - this.minSelectPointCoordinate[2], y - this.minSelectPointCoordinate[1], x - this.minSelectPointCoordinate[0], result[0], true);
+                        result = copiedDataChunker.voxelAtCoordinates(z - this.minSelectPointCoordinate[2], y - this.minSelectPointCoordinate[1], x - this.minSelectPointCoordinate[0], { v: result[0].v, f: 0 }, true);
                         if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                             this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: copiedDataChunker, entity: this.copiedVoxelEntity, isDataModel: true});
                             lastDirtyChunkArray.unshift(result[1]);
@@ -246,7 +246,7 @@ pc.script.create('voxelSelector', function (app) {
             if (app.keyboard.isPressed(pc.KEY_CONTROL) && app.keyboard.wasPressed(pc.KEY_Z) && this.undoBuffer.length > 0) {
                 undoEntry = this.undoBuffer.pop();
                 for (var i = 0; i < undoEntry.length; i++) {
-                    result = undoEntry[i].chunker.voxelAtCoordinates(undoEntry[i].z, undoEntry[i].y, undoEntry[i].x, undoEntry[i].prevColor, undoEntry[i].isDataModel);                                
+                    result = undoEntry[i].chunker.voxelAtCoordinates(undoEntry[i].z, undoEntry[i].y, undoEntry[i].x, { v: undoEntry[i].prevColor, f: 0 }, undoEntry[i].isDataModel);                                
                     if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                         this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: undoEntry[i].chunker, entity: undoEntry[i].entity, isDataModel: undoEntry[i].isDataModel});
                         lastDirtyChunkArray.unshift(result[1]);
@@ -268,15 +268,15 @@ pc.script.create('voxelSelector', function (app) {
                     for (y = 0; y < copiedDataChunker.originalDims[1]; y++) {
                         for (z = 0; z < copiedDataChunker.originalDims[2]; z++) {
                             result = copiedDataChunker.voxelAtCoordinates(z, y, x);
-                            color = result[0];
-                            result = targetDataChunker.voxelAtCoordinates(this.currentNormalVoxelCoordinate[2] + z, this.currentNormalVoxelCoordinate[1] + y, this.currentNormalVoxelCoordinate[0] + x, color, true);
+                            color = result[0].v;
+                            result = targetDataChunker.voxelAtCoordinates(this.currentNormalVoxelCoordinate[2] + z, this.currentNormalVoxelCoordinate[1] + y, this.currentNormalVoxelCoordinate[0] + x, { v: color, f: 0}, true);
                             undoEntry.push({chunker: targetDataChunker, entity: this.currentChunkerEntity,
                                             isDataModel: true,
                                             x: this.currentNormalVoxelCoordinate[0] + x,
                                             y: this.currentNormalVoxelCoordinate[1] + y,
                                             z: this.currentNormalVoxelCoordinate[2] + z,
                                             color: color,
-                                            prevColor: result[0]});
+                                            prevColor: result[0].v});
                             if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
                                 this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: targetDataChunker, entity: this.currentChunkerEntity, isDataModel: true});
                                 lastDirtyChunkArray.unshift(result[1]);
@@ -308,9 +308,9 @@ pc.script.create('voxelSelector', function (app) {
                 else {
                     targetCoordinate = this.currentNormalVoxelCoordinate;                    
                 }
-                result = targetDataChunker.voxelAtCoordinates(targetCoordinate[2], targetCoordinate[1], targetCoordinate[0], color, true);
-                if (result[0] !== color) {
-                    undoEntry.push({chunker: targetDataChunker, entity: this.currentChunkerEntity, isDataModel: true, x: targetCoordinate[0], y: targetCoordinate[1], z: targetCoordinate[2], color: color, prevColor: result[0]});
+                result = targetDataChunker.voxelAtCoordinates(targetCoordinate[2], targetCoordinate[1], targetCoordinate[0], { v: color, f: 0 }, true);
+                if (result[0].v !== color) {
+                    undoEntry.push({chunker: targetDataChunker, entity: this.currentChunkerEntity, isDataModel: true, x: targetCoordinate[0], y: targetCoordinate[1], z: targetCoordinate[2], color: color, prevColor: result[0].v});
                     if (lastDirtyChunkArray.indexOf(result[1])) {
                         this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: targetDataChunker, entity: this.currentChunkerEntity, isDataModel: true});
                         lastDirtyChunkArray.unshift(result[1]);
@@ -445,20 +445,20 @@ pc.script.create('voxelSelector', function (app) {
                     }                    
                 }*/
             }
-            else if (this.previousChunkerEntity) {
+            /*else if (this.previousChunkerEntity) {
                 // Cursor moved. Erase previous cursor first.
                 for (i = 0; i < this.lastDirtyPosArray.length; i++) {
                     result = this.lastDirtyPosArray[i].chunker.voxelAtCoordinates(this.lastDirtyPosArray[i].z, this.lastDirtyPosArray[i].y, this.lastDirtyPosArray[i].x);
                     // Erase dirty pos only when it is a cursor
                     if (result[0] === 0x01 || result[0] === 0x7f) {
-                        result = this.lastDirtyPosArray[i].chunker.voxelAtCoordinates(this.lastDirtyPosArray[i].z, this.lastDirtyPosArray[i].y, this.lastDirtyPosArray[i].x, 0x00, false);
+                        result = this.lastDirtyPosArray[i].chunker.voxelAtCoordinates(this.lastDirtyPosArray[i].z, this.lastDirtyPosArray[i].y, this.lastDirtyPosArray[i].x, { v: 0, f: 0 }, false);
                         if (result[1]) {
                             this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: this.lastDirtyPosArray[i].chunker, entity: this.lastDirtyPosArray[i].entity, isDataModel: false});
                         }
                     }
                 }
                 this.lastDirtyPosArray = [];
-            }
+            }*/
             
             // Null current Chunker
             this.previousChunkerEntity = this.currentChunkerEntity;
