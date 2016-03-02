@@ -3696,7 +3696,8 @@
             "colors.js", 
             "jqColorPicker.mod.js", 
             "colorPicker.js", 
-            "voxelBundle.js", 
+            "voxelBundle.js",
+            "chunk.js",
             "b64Bundle.js", 
             "debugMessage.js", 
             "voxelEntity3.js"

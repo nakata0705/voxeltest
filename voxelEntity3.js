@@ -129,13 +129,7 @@ vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShad
     }
     
     // Calculate XYZ offset for mesh
-    var chunker;
-    if (isDataModel === true) {
-        chunker = targetEntity.chunkerObject.dataChunker;
-    }
-    else {
-        chunker = targetEntity.chunkerObject.attrChunker;
-    }
+    var chunker = targetEntity.chunkerObject.dataChunker;
     var chunkerPivot = targetEntity.chunkerObject.chunkerPivot;
     var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
 
@@ -239,10 +233,10 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
         // Generate chunkMesh from chunker
         var chunkMesh;
         if (isDataModel === true) {
-            chunkMesh = voxel.meshers.transgreedy(chunk.data, chunk.shape);
+            chunkMesh = voxel.meshers.transgreedy(chunk.voxelArray.data, chunk.voxelArray.shape);
         }
         else {
-            chunkMesh = voxel.meshers.greedy(chunk.data, chunk.shape);
+            chunkMesh = voxel.meshers.greedy(chunk.voxelArray.data, chunk.voxelArray.shape);
         }
         
         if ((!chunkMesh.faces || chunkMesh.faces.length === 0) && (!chunkMesh.tFaces || chunkMesh.tFaces.length === 0)) {
@@ -468,9 +462,9 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
         }
         
         var chunkRigidBodyNum = 0;
-        var volume = chunk.data.slice(0); // Copy the voxel data. Might be costly.
-        var dimsX = chunk.shape[2],
-            dimsY = chunk.shape[1],
+        var volume = chunk.voxelArray.data.slice(0); // Copy the voxel data. Might be costly.
+        var dimsX = chunk.voxelArray.shape[2],
+            dimsY = chunk.voxelArray.shape[1],
             dimsXY = dimsX * dimsY;
 
         // Sweep over Y axis
@@ -478,9 +472,9 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
             u = (d + 1) % 3,
             v = (d + 2) % 3,
             x = [0, 0, 0],
-            dimsD = chunk.shape[d],
-            dimsU = chunk.shape[u],
-            dimsV = chunk.shape[v],
+            dimsD = chunk.voxelArray.shape[d],
+            dimsU = chunk.voxelArray.shape[u],
+            dimsV = chunk.voxelArray.shape[v],
             xd, xv, xu,
             n;
 
@@ -682,15 +676,11 @@ pc.script.create('voxelEntity3', function (app) {
                 case 0:
                     dataChunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk32});
                     dataChunker.originalDims = [0, 0, 0];
-                    attrChunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk8});                    
-                    attrChunker.originalDims = [0, 0, 0];
-                    chunkerObjectArray.push({name: "copiedVoxelEntity", dataChunker: dataChunker, attrChunker: attrChunker, pos: [0, 0, 0], chunkerPivot: [0.5, 0, 0.5], chunkScale: scale});
+                    chunkerObjectArray.push({name: "copiedVoxelEntity", dataChunker: dataChunker, pos: [0, 0, 0], chunkerPivot: [0.5, 0, 0.5], chunkScale: scale});
                     break;
                 case 1:
                     dataChunker = this.createChunkerFromVoxFile(app.assets.get(this.file).resource);
-                    attrChunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk8});
-                    attrChunker.originalDims = dataChunker.originalDims;
-                    chunkerObjectArray.push({name: "voxEntity_" + this.entity.name, dataChunker: dataChunker, attrChunker: attrChunker, pos: [0, 0, 0], chunkerPivot: [this.pivot.x, this.pivot.y, this.pivot.z], chunkScale: scale});
+                    chunkerObjectArray.push({name: "voxEntity_" + this.entity.name, dataChunker: dataChunker, pos: [0, 0, 0], chunkerPivot: [this.pivot.x, this.pivot.y, this.pivot.z], chunkScale: scale});
                     break;
                 case 2:
                     chunkerObjectArray = this.createVoxelDataFromQbFile();
@@ -714,12 +704,8 @@ pc.script.create('voxelEntity3', function (app) {
             }            
         },
                  
-        createVoxelChunk32: function(low, high, x, y, z) {
-            return voxel.generate32(low, high, function(i, j, k) { return 0; });
-        },
-                
-        createVoxelChunk8: function(low, high, x, y, z) {
-            return voxel.generate8(low, high, function(i, j, k) { return 0; });
+        createVoxelChunk: function(low, high, x, y, z) {
+        	return new Chunk(low, high, function(i, j, k) { return 0; });
         },
                 
         createVoxelDataFromQbFile: function() {
@@ -746,7 +732,6 @@ pc.script.create('voxelEntity3', function (app) {
             for (var i = 0; i < header.numMatrices; ++i) {
                 var matrixData = {};
                 index = this.readQbFileMatrix(qbDataView, index, header, matrixData);
-                matrixData.attrChunker = attrChunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk8});
                 chunkerObjectArray.push(matrixData);
             }
             return chunkerObjectArray;
@@ -860,7 +845,7 @@ pc.script.create('voxelEntity3', function (app) {
             var scale = this.entity.getLocalScale().x;
             
             // Voxel adds 1 padding for each face. So chunkPad should be 2.
-            var chunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk32});
+            var chunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
             
             // Read header
             var index = 0;

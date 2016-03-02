@@ -64,7 +64,7 @@ pc.script.create('voxelSelector', function (app) {
                         
             if (entity.isChunkerEntity === true) {
                 this.currentChunkerEntity = entity;
-                var currentAttrChunker = entity.chunkerObject.attrChunker;
+                var currentChunker = entity.chunkerObject.dataChunker;
                 var chunkerPivot = entity.chunkerObject.chunkerPivot;
                 var entityTranslation = entity.getWorldTransform().clone();
                 var entityScale = entityTranslation.getScale();
@@ -79,23 +79,23 @@ pc.script.create('voxelSelector', function (app) {
                 normal.scale(minScale * vx2.meshScale * 0.5); // 0.5 seems too much because the precision of the contact point is not so high
                 var normalPoint = new pc.Vec3().add2(worldPoint, normal);
                 var localPoint = entityTranslation.transformPoint(normalPoint);
-                this.currentNormalVoxelCoordinate[0] = Math.floor((localPoint.x * scale.x + (currentAttrChunker.originalDims[2] * chunkerPivot[0] + currentAttrChunker.chunkPadHalf) * scale.x * vx2.meshScale) / vx2.meshScale / scale.x) - 1;
-                this.currentNormalVoxelCoordinate[1] = Math.floor((localPoint.y * scale.y + (currentAttrChunker.originalDims[1] * chunkerPivot[1] + currentAttrChunker.chunkPadHalf) * scale.y * vx2.meshScale) / vx2.meshScale / scale.y) - 1;
-                this.currentNormalVoxelCoordinate[2] = Math.floor((localPoint.z * scale.z + (currentAttrChunker.originalDims[0] * chunkerPivot[2] + currentAttrChunker.chunkPadHalf) * scale.z * vx2.meshScale) / vx2.meshScale / scale.z) - 1;
+                this.currentNormalVoxelCoordinate[0] = Math.floor((localPoint.x * scale.x + (currentChunker.originalDims[2] * chunkerPivot[0] + currentChunker.chunkPadHalf) * scale.x * vx2.meshScale) / vx2.meshScale / scale.x) - 1;
+                this.currentNormalVoxelCoordinate[1] = Math.floor((localPoint.y * scale.y + (currentChunker.originalDims[1] * chunkerPivot[1] + currentChunker.chunkPadHalf) * scale.y * vx2.meshScale) / vx2.meshScale / scale.y) - 1;
+                this.currentNormalVoxelCoordinate[2] = Math.floor((localPoint.z * scale.z + (currentChunker.originalDims[0] * chunkerPivot[2] + currentChunker.chunkPadHalf) * scale.z * vx2.meshScale) / vx2.meshScale / scale.z) - 1;
                 
                 // Get current coordinate
                 this.previousTargetVoxelCoordinate = this.currentTargetVoxelCoordinate.slice(0);
                 normal.scale(-1); // -0.5 seems too much because the precision of the contact point is not so high
                 normalPoint = new pc.Vec3().add2(worldPoint, normal);
                 localPoint = entityTranslation.transformPoint(normalPoint);
-                this.currentTargetVoxelCoordinate[0] = Math.floor((localPoint.x * scale.x + (currentAttrChunker.originalDims[2] * chunkerPivot[0] + currentAttrChunker.chunkPadHalf) * scale.x * vx2.meshScale) / vx2.meshScale / scale.x) - 1;
-                this.currentTargetVoxelCoordinate[1] = Math.floor((localPoint.y * scale.y + (currentAttrChunker.originalDims[1] * chunkerPivot[1] + currentAttrChunker.chunkPadHalf) * scale.y * vx2.meshScale) / vx2.meshScale / scale.y) - 1;
-                this.currentTargetVoxelCoordinate[2] = Math.floor((localPoint.z * scale.z + (currentAttrChunker.originalDims[0] * chunkerPivot[2] + currentAttrChunker.chunkPadHalf) * scale.z * vx2.meshScale) / vx2.meshScale / scale.z) - 1;
+                this.currentTargetVoxelCoordinate[0] = Math.floor((localPoint.x * scale.x + (currentChunker.originalDims[2] * chunkerPivot[0] + currentChunker.chunkPadHalf) * scale.x * vx2.meshScale) / vx2.meshScale / scale.x) - 1;
+                this.currentTargetVoxelCoordinate[1] = Math.floor((localPoint.y * scale.y + (currentChunker.originalDims[1] * chunkerPivot[1] + currentChunker.chunkPadHalf) * scale.y * vx2.meshScale) / vx2.meshScale / scale.y) - 1;
+                this.currentTargetVoxelCoordinate[2] = Math.floor((localPoint.z * scale.z + (currentChunker.originalDims[0] * chunkerPivot[2] + currentChunker.chunkPadHalf) * scale.z * vx2.meshScale) / vx2.meshScale / scale.z) - 1;
             }
         },
         
         selectVoxelFrom2Points: function() {
-            var currentAttrChunker = this.selectPointTargetEntity.chunkerObject.attrChunker;
+            var currentChunker = this.selectPointTargetEntity.chunkerObject.dataChunker;
             var minSelectedCoordinates = [];
             var maxSelectedCoordinates = [];
             
@@ -108,12 +108,7 @@ pc.script.create('voxelSelector', function (app) {
             for (var x = this.minSelectPointCoordinate[0]; x <= this.maxSelectPointCoordinate[0]; ++x) {
                 for (var y = this.minSelectPointCoordinate[1]; y <= this.maxSelectPointCoordinate[1]; ++y) {
                     for (var z = this.minSelectPointCoordinate[2]; z <= this.maxSelectPointCoordinate[2]; ++z) {
-                        var result = currentAttrChunker.voxelAtCoordinates(z, y, x, 0x02, true);
                         this.allSelectPointCoordinate.push([x, y, z]);
-                        if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
-                            this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: currentAttrChunker, entity: this.selectPointTargetEntity, isDataModel: false});
-                            lastDirtyChunkArray.unshift(result[1]);
-                        }
                     }
                 }
             }
@@ -122,18 +117,6 @@ pc.script.create('voxelSelector', function (app) {
         unselectVoxel: function() {
             if (this.allSelectPointCoordinate.length === 0 || !this.selectPointTargetEntity) {
                 return;
-            }
-            
-            var currentAttrChunker = this.selectPointTargetEntity.chunkerObject.attrChunker;
-            var lastDirtyChunkArray = [];
-            
-            for (var i = 0; i < this.allSelectPointCoordinate.length; i++) {
-                var target = this.allSelectPointCoordinate[i];
-                var result = currentAttrChunker.voxelAtCoordinates(target[2], target[1], target[0], 0, true);
-                if (lastDirtyChunkArray.indexOf(result[1]) === -1) {
-                    this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: currentAttrChunker, entity: this.selectPointTargetEntity, isDataModel: false});
-                    lastDirtyChunkArray.unshift(result[1]);
-                }
             }
             
             // Empty selected voxel
@@ -347,7 +330,7 @@ pc.script.create('voxelSelector', function (app) {
         updateCursor: function () {
             var pos = this.entity.getPosition().clone();
             var dirtyChunk = null;
-            var currentAttrChunker, currentDataChunker;
+            var currentChunker;
             var minSelectedCoordinates = [];
             var maxSelectedCoordinates = [];
             var x, y, z, i;
@@ -356,7 +339,6 @@ pc.script.create('voxelSelector', function (app) {
             var result;
                         
             if (this.currentChunkerEntity) {
-                currentAttrChunker = this.currentChunkerEntity.chunkerObject.attrChunker;
                 currentDataChunker = this.currentChunkerEntity.chunkerObject.dataChunker;
             
                 // Display cursor
@@ -402,11 +384,6 @@ pc.script.create('voxelSelector', function (app) {
                         this.selectPointCoordinate[0] = this.currentTargetVoxelCoordinate.slice(0);
                         this.selectPointCoordinate[1] = undefined;
                         this.selectPointTargetEntity = this.currentChunkerEntity;
-
-                        result = currentAttrChunker.voxelAtCoordinates(this.selectPointCoordinate[0][2], this.selectPointCoordinate[0][1], this.selectPointCoordinate[0][0], 0x02, true);
-                        if (result[1]) {
-                            this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: currentAttrChunker, entity: this.currentChunkerEntity, isDataModel: false});
-                        }
                     }
                     else if (!this.selectPointCoordinate[1] && this.selectPointTargetEntity) {
                         this.selectPointCoordinate[1] = this.currentTargetVoxelCoordinate.slice(0);
@@ -421,7 +398,7 @@ pc.script.create('voxelSelector', function (app) {
                 }
                 
                 // Magick select
-                if (app.mouse.wasPressed(pc.MOUSEBUTTON_LEFT) && colorPicker.selectedTool === 'magickselect') {
+                /*if (app.mouse.wasPressed(pc.MOUSEBUTTON_LEFT) && colorPicker.selectedTool === 'magickselect') {
                     var newSelectVoxelCoordinateArray = [];
                     var targetVoxelValue;
                     var result2;
@@ -435,15 +412,11 @@ pc.script.create('voxelSelector', function (app) {
                         this.unselectVoxel();
 
                         this.selectPointTargetEntity = this.currentChunkerEntity;
-                        result = currentAttrChunker.voxelAtCoordinates(this.currentTargetVoxelCoordinate[2], this.currentTargetVoxelCoordinate[1], this.currentTargetVoxelCoordinate[0], 0x02, true);
                         newSelectVoxelCoordinateArray.push(this.currentTargetVoxelCoordinate.slice(0));
                         this.allSelectPointCoordinate.push(this.currentTargetVoxelCoordinate.slice(0));
                         for (i = 0; i < 3; i++) {
                             this.minSelectPointCoordinate[i] = this.currentTargetVoxelCoordinate[i];
                             this.maxSelectPointCoordinate[i] = this.currentTargetVoxelCoordinate[i];
-                        }
-                        if (result[1]) {
-                            this.dirtyChunkArray.push({dirtyChunk: result[1], chunker: currentAttrChunker, entity: this.currentChunkerEntity, isDataModel: false});
                         }
                         
                         while (newSelectVoxelCoordinateArray.length > 0 && selectNum < 4 * 4 * 4) {
@@ -470,7 +443,7 @@ pc.script.create('voxelSelector', function (app) {
                             }
                         }                        
                     }                    
-                }
+                }*/
             }
             else if (this.previousChunkerEntity) {
                 // Cursor moved. Erase previous cursor first.
