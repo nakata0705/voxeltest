@@ -103,8 +103,8 @@
                                     "options": {
                                         "max": 1
                                     }, 
-                                    "type": "asset", 
-                                    "value": 3305046
+                                    "type": "asset",
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -213,7 +213,7 @@
             "name": "Chr_Monu9", 
             "parent": "b855a0f8-6d9b-4a25-aefe-a4a043a7a15d", 
             "position": [
-                194, 
+                252, 
                 0, 
                 0
             ], 
@@ -547,7 +547,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -656,7 +656,7 @@
             "name": "Chr_Monu9", 
             "parent": "27d88bd7-b100-4eed-b03e-192b0843a622", 
             "position": [
-                194, 
+                252, 
                 0, 
                 0
             ], 
@@ -819,7 +819,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
@@ -872,7 +872,7 @@
             "position": [
                 0, 
                 0, 
-                -194
+                -252
             ], 
             "resource_id": "1e4b867d-2dbc-44b9-963c-62336be4bfa4", 
             "rotation": [
@@ -918,7 +918,7 @@
                                         "min": 1
                                     }, 
                                     "type": "number", 
-                                    "value": 4
+                                    "value": 16
                                 }
                             }, 
                             "attributesOrder": [
@@ -975,7 +975,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -1084,7 +1084,7 @@
             "name": "Chr_Monu9", 
             "parent": "b855a0f8-6d9b-4a25-aefe-a4a043a7a15d", 
             "position": [
-                -194, 
+                -252, 
                 0, 
                 0
             ], 
@@ -1209,7 +1209,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
@@ -1358,7 +1358,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
@@ -1723,7 +1723,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -1832,7 +1832,7 @@
             "name": "Chr_Monu9", 
             "parent": "27d88bd7-b100-4eed-b03e-192b0843a622", 
             "position": [
-                -194, 
+                -252, 
                 0, 
                 0
             ], 
@@ -1957,7 +1957,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
@@ -2021,7 +2021,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -2145,7 +2145,7 @@
                                         "min": 1
                                     }, 
                                     "type": "number", 
-                                    "value": 4
+                                    "value": 16
                                 }
                             }, 
                             "attributesOrder": [
@@ -2202,7 +2202,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -2358,9 +2358,36 @@
                             "url": "hammer.min.js"
                         },
                         {
-                            "attributes": {}, 
-                            "attributesOrder": [], 
-                            "name": "", 
+                            "attributes": {
+                            	"material": {
+                                    "defaultValue": [], 
+                                    "displayName": "Material", 
+                                    "name": "material", 
+                                    "options": {
+                                        "max": 1, 
+                                        "type": "material"
+                                    }, 
+                                    "type": "asset", 
+                                    "value": 3230843
+                                },
+                            	"textureChipSize": {
+                                    "defaultValue": 32, 
+                                    "displayName": "textureChipSize", 
+                                    "name": "textureChipSize", 
+                                    "options": {
+                                        "max": 256, 
+                                        "min": 1
+                                    }, 
+                                    "type": "number", 
+                                    "value": 32
+                                }
+
+                            }, 
+                            "attributesOrder": [
+                                "material",
+                                "textureChipSize"
+							], 
+                            "name": "resourcePack", 
                             "url": "resourcePack.js"
                         }
 
@@ -2562,7 +2589,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -2671,7 +2698,7 @@
             "name": "Chr_Monu9", 
             "parent": "1e4b867d-2dbc-44b9-963c-62336be4bfa4", 
             "position": [
-                -194, 
+                -252, 
                 0, 
                 0
             ], 
@@ -2796,7 +2823,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
@@ -2985,7 +3012,7 @@
             "position": [
                 0, 
                 0, 
-                194
+                252
             ], 
             "resource_id": "b855a0f8-6d9b-4a25-aefe-a4a043a7a15d", 
             "rotation": [
@@ -3023,7 +3050,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -3172,7 +3199,7 @@
                                         "max": 1
                                     }, 
                                     "type": "asset", 
-                                    "value": 3305046
+                                    "value": 3681176
                                 }, 
                                 "material": {
                                     "defaultValue": [], 
@@ -3281,7 +3308,7 @@
             "name": "Chr_Monu9", 
             "parent": "1e4b867d-2dbc-44b9-963c-62336be4bfa4", 
             "position": [
-                194, 
+                252, 
                 0, 
                 0
             ], 
@@ -3438,7 +3465,7 @@
                                     "name": "useVoxPalette", 
                                     "options": {}, 
                                     "type": "boolean", 
-                                    "value": true
+                                    "value": false
                                 }
                             }, 
                             "attributesOrder": [
