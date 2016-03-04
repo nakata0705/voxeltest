@@ -507,7 +507,7 @@
                 "emissiveMapVertexColor": false, 
                 "fresnelFactor": 0, 
                 "fresnelModel": 0, 
-                "glossMap": 3542691, 
+                "glossMap": null, 
                 "glossMapChannel": "r", 
                 "glossMapOffset": [
                     0, 
@@ -521,7 +521,7 @@
                 "glossMapVertexColor": false, 
                 "heightMap": null, 
                 "heightMapChannel": "r", 
-                "heightMapFactor": 0.788, 
+                "heightMapFactor": 0, 
                 "heightMapOffset": [
                     0, 
                     0
@@ -543,8 +543,8 @@
                 ], 
                 "lightMapUv": 1, 
                 "lightMapVertexColor": false, 
-                "metalness": 1, 
-                "metalnessMap": 3542692, 
+                "metalness": 0, 
+                "metalnessMap": null, 
                 "metalnessMapChannel": "r", 
                 "metalnessMapOffset": [
                     0, 
@@ -557,7 +557,7 @@
                 "metalnessMapTint": false, 
                 "metalnessMapUv": 0, 
                 "metalnessMapVertexColor": false, 
-                "normalMap": 3542927, 
+                "normalMap": null, 
                 "normalMapOffset": [
                     0, 
                     0
@@ -581,7 +581,7 @@
                 ], 
                 "opacityMapUv": 0, 
                 "opacityMapVertexColor": true, 
-                "reflectivity": 1, 
+                "reflectivity": 0, 
                 "refraction": 0, 
                 "refractionIndex": 0.6666666666666666, 
                 "shader": "blinn", 
@@ -593,7 +593,7 @@
                     0.23
                 ], 
                 "specularAntialias": true, 
-                "specularMap": 0, 
+                "specularMap": null, 
                 "specularMapChannel": "rgb", 
                 "specularMapOffset": [
                     0, 
@@ -1826,6 +1826,26 @@
             "revision": 1, 
             "tags": [], 
             "type": "material"
+        }, 
+        "3681176": {
+            "data": null, 
+            "file": {
+                "filename": "asset.txt", 
+                "hash": "a26a62c84a7275d39ce441a0b4252a95", 
+                "size": 2204, 
+                "url": "files/assets/3681176/1/asset.txt"
+            }, 
+            "has_thumbnail": false, 
+            "id": "3681176", 
+            "meta": null, 
+            "name": "ValueTest.vox", 
+            "path": [
+                3155065
+            ], 
+            "preload": true, 
+            "revision": 1, 
+            "tags": [], 
+            "type": "text"
         }
     }
 }
