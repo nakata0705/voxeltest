@@ -1,5 +1,5 @@
 [
-	{ "id": 0, "name": "void" },
-	{ "id": 1, "name": "stone", "all": "stone" },
-	{ "id": 2, "name": "grass", "top": "grass_top", "bottom": "dirt", "side": "grass_side" }
+	/* ID = 0 void  */ {}, 
+	/* ID = 1 stone */ { "all": "stone" },
+	/* ID = 2 grass */ { "top": "grass_top", "bottom": "dirt", "side": "grass_side" }
 ]
