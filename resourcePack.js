@@ -5,7 +5,13 @@ pc.script.attribute('textureChipSize', 'number', 32, {
 });
 
 pc.script.attribute('material', 'asset', [], {
-    displayName: "Material",
+    displayName: "opaqueMaterial",
+    max: 1,
+    type: 'material'
+});
+
+pc.script.attribute('transparentMaterial', 'asset', [], {
+    displayName: "transparentMaterial",
     max: 1,
     type: 'material'
 });
@@ -26,7 +32,6 @@ pc.script.create('resourcePack', function (app) {
 			self.textureChipNum = self.canvasSize / self.textureChipSize;
 			
 			self.resourceJson = undefined;
-			self.textureUvDictionary = {};
 			
 			self.$canvas = $('<canvas class="texture" width=' + self.canvasSize + ' height=' + self.canvasSize + '>');
 			self.$canvas.css({ "position": "absolute", "top": 128, "left": 0, "z-index": 100 });
@@ -59,17 +64,19 @@ pc.script.create('resourcePack', function (app) {
 			return this.loading;
 		},
 		
-		loadTexture: function(textureName, x, y, resourceObj, type) {
+		loadTexture: function(textureName, textureIndex, resourceObj, type) {
 			var self = this;
 			var textureFilePath = self.resourcePath + "textures/" + textureName + ".png";
 			self.loading++;
 			
-			$("<img src='" + textureFilePath + "'>").one("load", { x: x, y: y, resourceObj: resourceObj, type: type },
+			$("<img src='" + textureFilePath + "'>").one("load", { textureIndex: textureIndex, resourceObj: resourceObj, type: type },
 				function(event) {
-					self.context2D.drawImage(this, event.data.x * self.textureChipSize, event.data.y * self.textureChipSize);
-					
-					event.data.resourceObj[event.data.type] = self.textureUvDictionary[textureName];
+					var x = textureIndex % self.textureChipNum;
+					var y = Math.floor(textureIndex / self.textureChipNum);
+					self.context2D.drawImage(this, x * self.textureChipSize, y * self.textureChipSize);					
+					event.data.resourceObj[event.data.type] = textureIndex;
 					self.loading--;
+					
 					if (self.loading === 0) {
             			self.playCanvasTexture.setSource(self.$canvas.get(0));
             			self.playCanvasTexture.upload();
@@ -85,7 +92,7 @@ pc.script.create('resourcePack', function (app) {
 		loadTextures: function(data) {
 			var self = this;
 			var len = data.length;
-			var textureIndex = 0;
+			var textureIndex = 1;
 			
 			var x, y;
 			
@@ -93,36 +100,55 @@ pc.script.create('resourcePack', function (app) {
 			
 			for (var i = 0; i < len; i++) {				
 				if (data[i].all) {
-					x = textureIndex % this.textureChipNum;
-					y = Math.floor(textureIndex / this.textureChipNum);
-					this.textureUvDictionary[data[i].all] = [x * self.textureChipSize / self.canvasSize, y * self.textureChipSize / self.canvasSize, (x + 1) * self.textureChipSize / self.canvasSize, (y + 1) * self.textureChipSize / self.canvasSize];
-					this.loadTexture(data[i].all, x, y, data[i], "all");
+					this.loadTexture(data[i].all, textureIndex, self.resourceJson[i], "all");
 					textureIndex++;
 				}
 				if (data[i].top) {
-					x = textureIndex % this.textureChipNum;
-					y = Math.floor(textureIndex / this.textureChipNum);
-					this.textureUvDictionary[data[i].top] = [x * self.textureChipSize / self.canvasSize, y * self.textureChipSize / self.canvasSize, (x + 1) * self.textureChipSize / self.canvasSize, (y + 1) * self.textureChipSize / self.canvasSize];
-					this.loadTexture(data[i].top, x, y, data[i], "top");
+					this.loadTexture(data[i].top, textureIndex, self.resourceJson[i], "top");
 					textureIndex++;
 				}
 				if (data[i].bottom) {
-					x = textureIndex % this.textureChipNum;
-					y = Math.floor(textureIndex / this.textureChipNum);
-					this.textureUvDictionary[data[i].bottom] = [x * self.textureChipSize / self.canvasSize, y * self.textureChipSize / self.canvasSize, (x + 1) * self.textureChipSize / self.canvasSize, (y + 1) * self.textureChipSize / self.canvasSize];
-					this.loadTexture(data[i].bottom, x, y, data[i], "bottom");
+					this.loadTexture(data[i].bottom, textureIndex, self.resourceJson[i], "bottom");
 					textureIndex++;
 				}
 				if (data[i].side) {
-					x = textureIndex % this.textureChipNum;
-					y = Math.floor(textureIndex / this.textureChipNum);
-					this.textureUvDictionary[data[i].side] = [x * self.textureChipSize / self.canvasSize, y * self.textureChipSize / self.canvasSize, (x + 1) * self.textureChipSize / self.canvasSize, (y + 1) * self.textureChipSize / self.canvasSize];
-					this.loadTexture(data[i].side, x, y, data[i], "side");
+					this.loadTexture(data[i].side, textureIndex, self.resourceJson[i], "side");
 					textureIndex++;
 				}
 			}
     		// ここで引き算することで0になるはず
 			self.loading--;			
+		},
+		
+		getTextureId: function(voxelID, face) {
+			if (this.loading !== 0) {
+				// ロード中なので-1を返す
+				return -1;
+			}
+			if (this.resourceJson[voxelID] === undefined) {
+				// voxelIDに相当するデータがないので-1を返す
+				return -1;
+			}
+			
+			if (this.resourceJson[voxelId][face]) {
+				return this.resourceJson[voxelId][face];
+			}
+			
+			switch(face) {
+				case "left":
+				case "right":
+				case "front":
+				case "back":
+					if (this.resourcenJson[voxelId]["side"]) {
+						return this.resourceJson[voxelId]["side"]
+					}
+					break;				
+			}
+			
+			if (this.resourceJson[voxelId]["all"]) {
+				return this.resourceJson[voxelId]["all"];
+			}
+			return -1;
 		},
 		
         // Called every frame, dt is time in seconds since last update
