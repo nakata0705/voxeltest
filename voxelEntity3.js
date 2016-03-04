@@ -73,7 +73,7 @@ vx2.QB_CODEFLAG = 2;
 vx2.QB_NEXTSLICEFLAG = 6;
 vx2.meshScale = 1.0;
 vx2.rigidBodyGap = 0.0 * vx2.meshScale;
-vx2.voxelIdOffset = 0x40000;
+vx2.voxelIdOffset = 0x1000000;
 
 vx2.convert32bitRGBAto24bitRGBA = function(color) {
 	var aColor = (color & 0xfc000000) >>> (24 + 2);
@@ -273,7 +273,11 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                         	colors[chunkMesh.faces[i][j] * 4 + 3] = uInt8RGBAArray[3];
                         }
                         else {
-                        	
+                        	var voxelId = color - vx2.voxeldOffset;
+                        	colors[chunkMesh.faces[i][j] * 4] = color;
+                        	colors[chunkMesh.faces[i][j] * 4 + 1] = color;
+                        	colors[chunkMesh.faces[i][j] * 4 + 2] = color;
+                        	colors[chunkMesh.faces[i][j] * 4 + 3] = color;
                         }
                     }
                     else {
