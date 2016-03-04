@@ -23,25 +23,24 @@ var diffuseVertPSExt = '\
 uniform float uTextureChipNum;\n\
 uniform sampler2D texture_emissiveMap;\n\
 void getAlbedo(inout psInternalData data) {\n\
-    float voxelID = vVertexColor.a * 255.0;\n\
-    float voxelX = floor(voxelID / uTextureChipNum + 0.5);\n\
-    float voxelY = floor(mod(voxelID, uTextureChipNum) + 0.5);\n\
+    float voxelID = floor(vVertexColor.a * 256.0);\n\
+    float voxelY = floor(voxelID / uTextureChipNum) / uTextureChipNum;\n\
+    float voxelX = floor(mod(voxelID, uTextureChipNum)) / uTextureChipNum;\n\
     float textureChipSize = 1.0 / uTextureChipNum;\n\
-    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + textureChipSize * voxelX, fract(vUv0.y) * textureChipSize + textureChipSize * voxelY);\n\
-    data.albedo = texture2DGradEXT(texture_emissiveMap, wrappedUv, dFdx(vUv0), dFdy(vUv0)).$CH;\n\
+    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + voxelX, 1.0 - ((1.0 - fract(vUv0.y)) * textureChipSize + voxelY));\n\
+    data.albedo = texture2DGradEXT(texture_emissiveMap, wrappedUv, dFdx(vUv0), dFdy(vUv0)).rgb;\n\
 }\n';
 
 var diffuseVertPSNoExt = '\
 uniform float uTextureChipNum;\n\
 uniform sampler2D texture_emissiveMap;\n\
 void getAlbedo(inout psInternalData data) {\n\
-    float voxelID = vVertexColor.a * 255.0;\n\
-    float voxelX = floor(voxelID / uTextureChipNum + 0.5);\n\
-    float voxelY = floor(mod(voxelID, uTextureChipNum) + 0.5);\n\
+    float voxelID = floor(vVertexColor.a * 256.0);\n\
+    float voxelX = floor(voxelID / uTextureChipNum) / uTextureChipNum;\n\
+    float voxelY = floor(mod(voxelID, uTextureChipNum)) / uTextureChipNum;\n\
     float textureChipSize = 1.0 / uTextureChipNum;\n\
-    float u = fract(vUv0.x) * textureChipSize + textureChipSize * voxelX;\n\
-    float v = fract(vUv0.y) * textureChipSize + textureChipSize * voxelY;\n\
-    data.albedo = texture2DSRGB(texture_emissiveMap, vec2(u, v)).$CH;\n\
+    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + voxelX, 1.0 - ((1.0 - fract(vUv0.y)) * textureChipSize + voxelY));\n\
+    data.albedo = texture2DSRGB(texture_emissiveMap, wrappedUv).$CH;\n\
 }\n';
 
 var fogLinearPS = '\
