@@ -23,11 +23,11 @@ var diffuseVertPSExt = '\
 uniform float uTextureChipNum;\n\
 uniform sampler2D texture_emissiveMap;\n\
 void getAlbedo(inout psInternalData data) {\n\
-    float voxelID = floor(vVertexColor.a * 256.0);\n\
-    float voxelY = floor(voxelID / uTextureChipNum) / uTextureChipNum;\n\
-    float voxelX = floor(mod(voxelID, uTextureChipNum)) / uTextureChipNum;\n\
+    float textureID = floor(vVertexColor.a * 256.0);\n\
+    float offsetU = floor(mod(textureID, uTextureChipNum)) / uTextureChipNum;\n\
+    float offsetV = floor(textureID / uTextureChipNum) / uTextureChipNum;\n\
     float textureChipSize = 1.0 / uTextureChipNum;\n\
-    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + voxelX, 1.0 - ((1.0 - fract(vUv0.y)) * textureChipSize + voxelY));\n\
+    vec2 wrappedUv = vec2(fract(vUv0.x) * textureChipSize + offsetU, 1.0 - ((1.0 - fract(vUv0.y)) * textureChipSize + offsetV));\n\
     data.albedo = texture2DGradEXT(texture_emissiveMap, wrappedUv, dFdx(vUv0), dFdy(vUv0)).rgb;\n\
 }\n';
 
