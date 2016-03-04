@@ -3,6 +3,12 @@ var chunkSize = 32;
 var chunkPad = 2;
 
 // チャンクを管理するためのクラス
+// 現在のところ、voxelArrayの中に入る値は
+// { v: ボクセルID値, f: ボクセルフラグ値 }
+// ボクセルID: 0x0 - 0xffffff = 24bit RGBAカラー
+//           0x1000000 - = ボクセルID0からのテクスチャボクセル
+// ボクセルフラグ: 未定
+
 function Chunk(lo, hi, fn) {
 	lo[0]--;
 	lo[1]--;
