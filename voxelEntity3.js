@@ -17,18 +17,6 @@ pc.script.attribute('file', 'asset', [], {
     max: 1
 });
 
-pc.script.attribute('material', 'asset', [], {
-    displayName: "Material",
-    max: 1,
-    type: 'material'
-});
-
-pc.script.attribute('transparentMaterial', 'asset', [], {
-    displayName: "transparentMaterial",
-    max: 1,
-    type: 'material'
-});
-
 pc.script.attribute('pivot', 'vec3', [0.5, 0, 0.5], {
     displayName: "Pivot point"
 });
@@ -97,11 +85,12 @@ vx2.convert32bitRGBAto8bitRGBAArray = function(color) {
 	         color & 0xff ];
 };
                
-vx2.removeRigidBodies = function(targetEntity, center, distance, app) {
+vx2.removeRigidBodies = function(targetEntity, center, distance) {
     if (targetEntity.chunkerObject === undefined) {
         return;
     }
    
+	var app = pc.Application.getApplication();   
     var chunker = targetEntity.chunkerObject.dataChunker;
     var nearby = chunker.nearbyChunksCoordinate(center, distance);
     for (var n = 0; n < nearby.length; n++) {
@@ -118,7 +107,8 @@ vx2.removeRigidBodies = function(targetEntity, center, distance, app) {
     }    
 };
 
-vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShadows, center, distance, app) {
+vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShadows, center, distance) {
+	var app = pc.Application.getApplication();
     if (targetEntity.chunkerObject === undefined) {
         return;
     }
@@ -259,9 +249,40 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
             
             for (i = 0; i < chunkMesh.faces.length; i++) {
                 color = chunkMesh.faces[i][4]; // The minimum color index in VOX is 1.
+                
+                // 面を追加
                 indices.push(chunkMesh.faces[i][0], chunkMesh.faces[i][2], chunkMesh.faces[i][3], chunkMesh.faces[i][0], chunkMesh.faces[i][1], chunkMesh.faces[i][2]);
                 
+                // 面の向き、高さとと幅を取得する、ただしすべての面がローカル座標平面と垂直であることを前提とする
+                var diff = [];
+                var u = 0, v = 1;
+                for (j = 0; j < 3; j++) {
+                    diff[j] = Math.round(positions[chunkMesh.faces[i][2] * 3 + j] - positions[chunkMesh.faces[i][0] * 3 + j]);
+                    if (diff[j] === 0) {
+                        u = (j + 1) % 3;
+                        v = (j + 2) % 3;
+                    }
+                }
+                
+                // diffVertexは現在操作中の面の情報が入っており、軸の情報を取得できる。
+                var vertex = [];
+                var diffVertex = [];
                 for (j = 0; j < 4; j++) {
+                    vertex[j] = [positions[chunkMesh.faces[i][j] * 3], positions[chunkMesh.faces[i][j] * 3 + 1], positions[chunkMesh.faces[i][j] * 3 + 2]];
+                }
+                for (j = 0; j < 3; j++) {
+                    diffVertex[j] = [vertex[j + 1][0] - vertex[j][0], vertex[j + 1][1] - vertex[j][1], vertex[j + 1][2] - vertex[j][2]];
+                }
+                
+                var clockwise;
+                if (diffVertex[0][u] !== 0) {
+                	clockwise = false;
+                }
+                else {
+                	clockwise = true;
+                }
+				
+				for (j = 0; j < 4; j++) {
                     // Set vertex color
                     if (isDataModel === true) {
                     	if (color < vx2.voxelIdOffset) {
@@ -287,32 +308,11 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                         colors[chunkMesh.faces[i][j] * 4 + 3] = 0xff;
                     }
                 }
-                
-                // Trying to get the face's width and height
-                var diff = [];
-                var u = 0, v = 1;
-                for (j = 0; j < 3; j++) {
-                    diff[j] = Math.round(positions[chunkMesh.faces[i][2] * 3 + j] - positions[chunkMesh.faces[i][0] * 3 + j]);
-                    if (diff[j] === 0) {
-                        u = (j + 1) % 3;
-                        v = (j + 2) % 3;
-                    }
-                }
-                
-                // Get if the face is clockwise or counter clockwise.
-                var vertex = [];
-                var diffVertex = [];
-                for (j = 0; j < 4; j++) {
-                    vertex[j] = [positions[chunkMesh.faces[i][j] * 3], positions[chunkMesh.faces[i][j] * 3 + 1], positions[chunkMesh.faces[i][j] * 3 + 2]];
-                }
-                for (j = 0; j < 3; j++) {
-                    diffVertex[j] = [vertex[j + 1][0] - vertex[j][0], vertex[j + 1][1] - vertex[j][1], vertex[j + 1][2] - vertex[j][2]];
-                }
-                
+                                
                 // Set proper UV coordinate
                 switch (u) {
                     case 0: // U = x axis. When counter clock wise, 0 to 1 increases Y value = V value.
-                        if (diffVertex[0][u] !== 0) {
+                        if (clockwise === false) {
                             // Counter clock wise
                             uvs[chunkMesh.faces[i][0] * 2] = 0;
                             uvs[chunkMesh.faces[i][0] * 2 + 1] = 0;
@@ -336,7 +336,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                         }
                         break;
                     case 1: // U = y axis
-                        if (diffVertex[0][u] !== 0) {
+                        if (clockwise === false) {
                             // Counter clock wise
                             uvs[chunkMesh.faces[i][0] * 2] = diff[v];
                             uvs[chunkMesh.faces[i][0] * 2 + 1] = 0;
@@ -360,7 +360,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                         }
                         break;
                     case 2: // U = z axis
-                        if (diffVertex[0][u] !== 0) {
+                        if (clockwise === false) {
                             // Counter clock wise
                             uvs[chunkMesh.faces[i][0] * 2] = 0;
                             uvs[chunkMesh.faces[i][0] * 2 + 1] = 0;

@@ -2356,41 +2356,7 @@
                             "attributesOrder": [], 
                             "name": "", 
                             "url": "hammer.min.js"
-                        },
-                        {
-                            "attributes": {
-                            	"material": {
-                                    "defaultValue": [], 
-                                    "displayName": "Material", 
-                                    "name": "material", 
-                                    "options": {
-                                        "max": 1, 
-                                        "type": "material"
-                                    }, 
-                                    "type": "asset", 
-                                    "value": 3230843
-                                },
-                            	"textureChipSize": {
-                                    "defaultValue": 32, 
-                                    "displayName": "textureChipSize", 
-                                    "name": "textureChipSize", 
-                                    "options": {
-                                        "max": 256, 
-                                        "min": 1
-                                    }, 
-                                    "type": "number", 
-                                    "value": 32
-                                }
-
-                            }, 
-                            "attributesOrder": [
-                                "material",
-                                "textureChipSize"
-							], 
-                            "name": "resourcePack", 
-                            "url": "resourcePack.js"
                         }
-
                     ]
                 }
             }, 
@@ -3722,7 +3688,8 @@
             "jquery-2.2.0.min.js", 
             "colors.js", 
             "jqColorPicker.mod.js", 
-            "colorPicker.js", 
+            "colorPicker.js",
+            "resourcePack.js",
             "voxelBundle.js",
             "chunk.js",
             "b64Bundle.js", 
