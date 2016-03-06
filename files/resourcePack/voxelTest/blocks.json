@@ -1,5 +1,15 @@
-[
-	{ "c": "ID = 0 void" }, 
-	{ "all": "stone", "c":  "ID = 1 stone" },
-	{ "top": "grass_top", "bottom": "dirt", "side": "grass_side", "c": "ID = 2 grass" }
-]
+{
+	"textures": {
+		"void":			0,
+		"stone":		1,
+		"grass_top":	2,
+		"dirt":			3,
+		"grass_side":	4
+	},
+	
+	"blocks": [
+		{ "comment": "ID = 0 void" }, 
+		{ "comment": "ID = 1 stone", "all": "stone" },
+		{ "comment": "ID = 2 grass", "top": "grass_top", "bottom": "dirt", "side": "grass_side" }
+	]
+}

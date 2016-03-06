@@ -1846,6 +1846,24 @@
             "revision": 1, 
             "tags": [], 
             "type": "text"
+        },
+        "3681177": {
+            "data": null, 
+            "file": {
+                "filename": "blocks.json", 
+                "hash": "00000000000000000000000000000000", 
+                "size": 0, 
+                "url": "files/resourcePack/voxelTest/blocks.json"
+            }, 
+            "has_thumbnail": false, 
+            "id": "3681177", 
+            "meta": null, 
+            "name": "blocks.json", 
+            "path": [], 
+            "preload": true,
+            "revision": 1, 
+            "tags": [], 
+            "type": "json"
         }
     }
 }

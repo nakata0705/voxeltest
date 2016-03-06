@@ -248,6 +248,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
             }
             
             for (i = 0; i < chunkMesh.faces.length; i++) {
+            	// voxelIDを面の頂点色から取得
                 color = chunkMesh.faces[i][4]; // The minimum color index in VOX is 1.
                 
                 // 面を追加
@@ -294,11 +295,13 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
                         	colors[chunkMesh.faces[i][j] * 4 + 3] = uInt8RGBAArray[3];
                         }
                         else {
-                        	var voxelId = color - vx2.voxeldOffset;
-                        	colors[chunkMesh.faces[i][j] * 4] = color;
-                        	colors[chunkMesh.faces[i][j] * 4 + 1] = color;
-                        	colors[chunkMesh.faces[i][j] * 4 + 2] = color;
-                        	colors[chunkMesh.faces[i][j] * 4 + 3] = color;
+                        	var voxelId = color - vx2.voxelIdOffset;
+		            	    var face = resourcePack.getFace(u, clockwise);                
+        			        var textureId = resourcePack.getTextureId(voxelId, face);
+                        	colors[chunkMesh.faces[i][j] * 4] = textureId;
+                        	colors[chunkMesh.faces[i][j] * 4 + 1] = textureId;
+                        	colors[chunkMesh.faces[i][j] * 4 + 2] = textureId;
+                        	colors[chunkMesh.faces[i][j] * 4 + 3] = textureId;
                         }
                     }
                     else {

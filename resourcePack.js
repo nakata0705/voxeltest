@@ -6,6 +6,8 @@ function ResourcePack() {
 	
 	this.resourceJson = undefined;
 	
+	this.faceReferenceArray = [ ["front", "back"], ["left", "right"], ["bottom", "top"] ];
+	
 	// Canvasを作成する
 	this.$canvas = $('<canvas class="texture" width=' + this.canvasSize + ' height=' + this.canvasSize + '>');
 	this.$canvas.css({ "position": "absolute", "top": 128, "left": 0, "z-index": 100 });
@@ -34,31 +36,44 @@ function ResourcePack() {
     this.playCanvasTexture.addressU = pc.ADDRESS_CLAMP_TO_EDGE;
     this.playCanvasTexture.addressV = pc.ADDRESS_CLAMP_TO_EDGE;
 	
-	this.loading = 1;
+	this.isLoaded = false;
+	this.allImgLoading = false;
+	this.imgLoading = 0;
 	this.resourcePath = "./files/resourcePack/voxelTest/";
-	$.getJSON(this.resourcePath + "blocks.json" , this.loadTextures.bind(this));	
+	
+	// プリロード済みのリソースをセット
+	this.resourceJson = app.assets.find("blocks.json").resource;
+    this.loadTextures();
 };
     
 ResourcePack.prototype = {
-	// ロード中のファイル数を返す
-	isLoading: function() {
-		return this.loading;
-	},
+	loadTextures: function() {
+		var x, y;
 		
-	loadTexture: function(textureName, textureIndex, resourceObj, type) {
+		// テクスチャをロードする
+		for (var name in this.resourceJson.textures) {
+			if (name === "void") continue;
+			var textureIndex = this.resourceJson.textures[name];
+			this.loadTexture(name, textureIndex);
+		}
+		this.allImgLoading = true;
+	},
+	
+	loadTexture: function(textureName, textureIndex) {
 		var self = this;
 		var textureFilePath = self.resourcePath + "textures/" + textureName + ".png";
-		self.loading++;
 		
-		$("<img src='" + textureFilePath + "'>").one("load", { textureIndex: textureIndex, resourceObj: resourceObj, type: type },
+		this.imgLoading++;
+		
+		$("<img src='" + textureFilePath + "'>").one("load", { textureIndex: textureIndex },
 			function(event) {
+				var textureIndex = event.data.textureIndex;
 				var x = textureIndex % self.textureChipNum;
 				var y = Math.floor(textureIndex / self.textureChipNum);
 				self.context2D.drawImage(this, x * self.textureChipSize, y * self.textureChipSize);					
-				event.data.resourceObj[event.data.type] = textureIndex;
-				self.loading--;
+				self.imgLoading--;
 				
-				if (self.loading === 0) {
+				if (self.imgLoading === 0 && self.allImgLoading === true) {
         			self.playCanvasTexture.setSource(self.$canvas.get(0));
         			self.playCanvasTexture.upload();
         			var source = self.playCanvasTexture.getSource();
@@ -67,71 +82,60 @@ ResourcePack.prototype = {
 					var material = app.assets.find("Non-Transparent", "material").resource;
 					material.emissiveMap = self.playCanvasTexture;
             		material.update();
+            		this.isLoaded = true;
+            		if (self.callback) self.callback();
 				}
 			});	
 	},
 		
-	loadTextures: function(data) {
-		var self = this;
-		var len = data.length;
-		var textureIndex = 1;
+	getTextureId: function(voxelId, face) {
+		var textureName, textureId;
+		var targetFace = face;
 		
-		var x, y;
-		
-		self.resourceJson = data;
-		
-		for (var i = 0; i < len; i++) {				
-			if (data[i].all) {
-				this.loadTexture(data[i].all, textureIndex, self.resourceJson[i], "all");
-				textureIndex++;
-			}
-			if (data[i].top) {
-				this.loadTexture(data[i].top, textureIndex, self.resourceJson[i], "top");
-				textureIndex++;
-			}
-			if (data[i].bottom) {
-				this.loadTexture(data[i].bottom, textureIndex, self.resourceJson[i], "bottom");
-				textureIndex++;
-			}
-			if (data[i].side) {
-				this.loadTexture(data[i].side, textureIndex, self.resourceJson[i], "side");
-				textureIndex++;
-			}
-		}
-		// ここで引き算することで0になるはず
-		self.loading--;			
-	},
-	
-	getTextureId: function(voxelID, face) {
-		if (this.loading !== 0) {
-			// ロード中なので-1を返す
-			return -1;
-		}
-		if (this.resourceJson[voxelID] === undefined) {
+		if (this.resourceJson.blocks[voxelId] === undefined) {
 			// voxelIDに相当するデータがないので-1を返す
 			return -1;
 		}
 		
-		if (this.resourceJson[voxelId][face]) {
-			return this.resourceJson[voxelId][face];
+		// 指定のVoxelIdの面の名前(あるいはTextureId)を取得
+		if (this.resourceJson.blocks[voxelId][targetFace]) {
+			textureName = this.resourceJson.blocks[voxelId][targetFace];
+		}
+		else {
+			switch(face) {
+				case "left":
+				case "right":
+				case "front":
+				case "back":
+					if (this.resourceJson.blocks[voxelId]["side"]) {
+						targetFace = "side";
+					}
+					break;				
+			}
+				
+			if (this.resourceJson.blocks[voxelId]["all"]) {
+				targetFace = "all";
+			}
+			textureName = this.resourceJson.blocks[voxelId][targetFace];
 		}
 		
-		switch(face) {
-			case "left":
-			case "right":
-			case "front":
-			case "back":
-				if (this.resourcenJson[voxelId]["side"]) {
-					return this.resourceJson[voxelId]["side"]
-				}
-				break;				
+		if (!textureName) return -1;
+		
+		if (typeof textureName === "string") {
+			// テクスチャ名を取得したのでテクスチャIDに変換
+			var textureId = this.resourceJson.textures[textureName];
+			this.resourceJson.blocks[voxelId][targetFace] = textureId;
 		}
-			
-		if (this.resourceJson[voxelId]["all"]) {
-			return this.resourceJson[voxelId]["all"];
-		}
-		return -1;
+		
+		return this.resourceJson.blocks[voxelId][targetFace];		
+	},
+	
+	getFace: function(u, clockwise) {
+		if (clockwise === true) clockwise = 0;
+		else clockwise = 1;
+		return this.faceReferenceArray[u][clockwise];
 	}
 };
 
+// グローバルなクラスインスタンス
 var resourcePack = new ResourcePack();
