@@ -10,7 +10,7 @@ function ResourcePack() {
 	
 	// Canvasを作成する
 	this.$canvas = $('<canvas class="texture" width=' + this.canvasSize + ' height=' + this.canvasSize + '>');
-	this.$canvas.css({ "position": "absolute", "top": 128, "left": 0, "z-index": 100 });
+	this.$canvas.css({ "position": "absolute", "top": -65536, "left": -65536 });
 	this.context2D = this.$canvas.get(0).getContext("2d");
 	
 	// Canvasをテクスチャを正常に参照できているかを確認するグラデーションで塗りつぶす
@@ -19,7 +19,7 @@ function ResourcePack() {
 	gradation.addColorStop(0.5,"red");
 	gradation.addColorStop(1,"green");
 	this.context2D.fillStyle = gradation;
-	this.context2D.fillRect(0, 0, 511, 511);
+	this.context2D.fillRect(0, 0, 513, 513);
 	
 	// CanvasをHTML本体に追加
 	$('body').append(this.$canvas);
@@ -92,8 +92,8 @@ ResourcePack.prototype = {
 		var targetFace = face;
 		
 		if (this.resourceJson.blocks[voxelId] === undefined) {
-			// voxelIDに相当するデータがないので-1を返す
-			return -1;
+			// voxelIDに相当するデータがないので255を返す
+			return 255;
 		}
 		
 		// 指定のVoxelIdの面の名前(あるいはTextureId)を取得
@@ -118,7 +118,7 @@ ResourcePack.prototype = {
 			textureName = this.resourceJson.blocks[voxelId][targetFace];
 		}
 		
-		if (!textureName) return -1;
+		if (!textureName) return 255;
 		
 		if (typeof textureName === "string") {
 			// テクスチャ名を取得したのでテクスチャIDに変換

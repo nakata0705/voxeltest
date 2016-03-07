@@ -1,7 +1,7 @@
 {
     "application_properties": {
         "fill_mode": "KEEP_ASPECT", 
-        "height": 480, 
+        "height": 600, 
         "libraries": [
             "ammo.js"
         ], 
@@ -10,7 +10,7 @@
         "transparent_canvas": false, 
         "use_device_pixel_ratio": false, 
         "use_legacy_audio": false, 
-        "width": 640
+        "width": 800
     }, 
     "assets": {
         "3140749": {
