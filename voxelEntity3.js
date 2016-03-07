@@ -60,7 +60,7 @@ vx2.magicaVoxelDefaultPalette = [0x00000000,
 vx2.QB_CODEFLAG = 2;
 vx2.QB_NEXTSLICEFLAG = 6;
 vx2.meshScale = 1.0;
-vx2.rigidBodyGap = 0.0 * vx2.meshScale;
+vx2.rigidBodyGap = 0.01 * vx2.meshScale;
 vx2.voxelIdOffset = 0x1000000;
 
 vx2.convert32bitRGBAto24bitRGBA = function(color) {
