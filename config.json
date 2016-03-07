@@ -6,7 +6,7 @@
             "ammo.js"
         ], 
         "loading_screen_script": null, 
-        "resolution_mode": "FIXED", 
+        "resolution_mode": "AUTO", 
         "transparent_canvas": false, 
         "use_device_pixel_ratio": false, 
         "use_legacy_audio": false, 
