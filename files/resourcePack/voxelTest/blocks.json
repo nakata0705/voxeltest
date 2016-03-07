@@ -28,7 +28,7 @@
 	
 	"blocks": [
 		{ "comment": "ID = 0 void" }, 
-		{ "comment": "ID = 1 snow", "all": "snow" },
+		{ "comment": "ID = 1 snow", "all": "notdefined" },
 		{ "comment": "ID = 2 grass", "top": "grass_top", "bottom": "dirt", "side": "grass_side" },
 		{ "comment": "ID = 3 stone", "all": "stone" },
 		{ "comment": "ID = 4 notdefined", "all": "notdefined" },
