@@ -1378,7 +1378,7 @@
                     ]
                 }
             }, 
-            "enabled": true, 
+            "enabled": false, 
             "name": "Castle", 
             "parent": "7b4c3626-b091-4153-a1a7-383582cf05f2", 
             "position": [
@@ -1606,7 +1606,7 @@
                     "outerConeAngle": 45, 
                     "range": 64, 
                     "shadowBias": 1, 
-                    "shadowDistance": 512, 
+                    "shadowDistance": 1024, 
                     "shadowResolution": 4096, 
                     "type": "directional"
                 }
