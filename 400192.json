@@ -1601,13 +1601,13 @@
                     "enabled": true, 
                     "falloffMode": 0, 
                     "innerConeAngle": 40, 
-                    "intensity": 7.74, 
+                    "intensity": 4.0, 
                     "normalOffsetBias": 1, 
                     "outerConeAngle": 45, 
                     "range": 64, 
                     "shadowBias": 1, 
                     "shadowDistance": 512, 
-                    "shadowResolution": 2048, 
+                    "shadowResolution": 4096, 
                     "type": "directional"
                 }
             }, 
@@ -2416,16 +2416,16 @@
                                 	"value": 10
                             	},
                                 "maxSkyboxIntensity": {
-                                	"defaultValue": 4,
+                                	"defaultValue": 4.0,
                                 	"name": "maxSkyboxIntensity",
                                 	"type": "number",
-                                	"value": 4
+                                	"value": 6.0
                             	},
                                 "minSkyboxIntensity": {
-                                	"defaultValue": 0.1,
+                                	"defaultValue": 4.0,
                                 	"name": "minSkyboxIntensity",
                                 	"type": "number",
-                                	"value": 0.0
+                                	"value": 4.0
                             	}
 							}, 
                             "attributesOrder": [
@@ -3707,7 +3707,7 @@
             "fog_density": 0.001, 
             "fog_end": 4096, 
             "fog_start": 1, 
-            "gamma_correction": 1, 
+            "gamma_correction": 0, 
             "global_ambient": [
                 0, 
                 0, 
@@ -3715,7 +3715,7 @@
                 1
             ], 
             "skybox": 3140749, 
-            "skyboxIntensity": 6, 
+            "skyboxIntensity": 1, 
             "skyboxMip": 3, 
             "tonemapping": 1
         }

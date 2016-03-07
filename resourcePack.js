@@ -77,7 +77,6 @@ ResourcePack.prototype = {
         			self.playCanvasTexture.setSource(self.$canvas.get(0));
         			self.playCanvasTexture.upload();
         			var source = self.playCanvasTexture.getSource();
-        			console.log("height = " + self.playCanvasTexture.height);
         			var app = pc.Application.getApplication();
 					var material = app.assets.find("Non-Transparent", "material").resource;
 					material.emissiveMap = self.playCanvasTexture;

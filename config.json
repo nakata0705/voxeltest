@@ -588,9 +588,9 @@
                 "shadowSampleType": 1, 
                 "shininess": 0, 
                 "specular": [
-                    0.23, 
-                    0.23, 
-                    0.23
+                    0.0, 
+                    0.0, 
+                    0.0
                 ], 
                 "specularAntialias": true, 
                 "specularMap": null, 
@@ -1177,9 +1177,9 @@
                 "shadowSampleType": 1, 
                 "shininess": 32, 
                 "specular": [
-                    0.23, 
-                    0.23, 
-                    0.23
+                    0.0, 
+                    0.0, 
+                    0.0
                 ], 
                 "specularAntialias": true, 
                 "specularMap": 0, 

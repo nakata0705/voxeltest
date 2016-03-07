@@ -31,11 +31,11 @@ pc.script.create('sun', function (app) {
         	
         	if (position.y < 0) {
         		this.light.enabled = false;
-				//app.scene.skyboxIntensity = this.minSkyboxIntensity;
+				app.scene.skyboxIntensity = this.minSkyboxIntensity;
         	}
         	else {
         		this.light.enabled = true;
-				//app.scene.skyboxIntensity = (this.maxSkyboxIntensity - this.minSkyboxIntensity) * position.y / this.sunDistance * Math.sqrt(3) / 2 + this.minSkyboxIntensity;
+				app.scene.skyboxIntensity = (this.maxSkyboxIntensity - this.minSkyboxIntensity) * position.y / this.sunDistance * Math.sqrt(3) / 2 + this.minSkyboxIntensity;
         	}
         	this.entity.lookAt(0, 0, 0);
         }
