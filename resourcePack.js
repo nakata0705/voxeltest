@@ -93,7 +93,7 @@ ResourcePack.prototype = {
 		
 		if (this.resourceJson.blocks[voxelId] === undefined) {
 			// voxelIDに相当するデータがないので255を返す
-			return 255;
+			return 128;
 		}
 		
 		// 指定のVoxelIdの面の名前(あるいはTextureId)を取得
@@ -118,7 +118,7 @@ ResourcePack.prototype = {
 			textureName = this.resourceJson.blocks[voxelId][targetFace];
 		}
 		
-		if (!textureName) return 255;
+		if (!textureName) return 128;
 		
 		if (typeof textureName === "string") {
 			// テクスチャ名を取得したのでテクスチャIDに変換
