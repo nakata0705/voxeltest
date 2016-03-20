@@ -3691,6 +3691,7 @@
             "colorPicker.js",
             "resourcePack.js",
             "voxelBundle.js",
+            "voxelUtility.js",
             "chunk.js",
             "b64Bundle.js", 
             "debugMessage.js", 

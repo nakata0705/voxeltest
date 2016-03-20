@@ -31,8 +31,8 @@ function ResourcePack() {
         autoMipmap: false
     });
     
-    this.playCanvasTexture.minFilter = pc.FILTER_NEAREST;
-    this.playCanvasTexture.magFilter = pc.FILTER_NEAREST;
+    this.playCanvasTexture.minFilter = pc.FILTER_LINEAR;
+    this.playCanvasTexture.magFilter = pc.FILTER_LINEAR;
     this.playCanvasTexture.addressU = pc.ADDRESS_CLAMP_TO_EDGE;
     this.playCanvasTexture.addressV = pc.ADDRESS_CLAMP_TO_EDGE;
 	
@@ -41,7 +41,7 @@ function ResourcePack() {
 	this.imgLoading = 0;
 	this.resourcePath = "./files/resourcePack/voxelTest/";
 	
-	// プリロード済みのリソースをセット
+	// プリロード済みのJSONをセットし、テクスチャをロード
 	this.resourceJson = app.assets.find("blocks.json").resource;
     this.loadTextures();
 };
