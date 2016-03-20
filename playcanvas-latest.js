@@ -1,11 +1,11 @@
 /*
- PlayCanvas Engine v0.182.0-dev revision ca49cd4
+ PlayCanvas Engine v0.182.0-dev revision ca27cf5
  http://playcanvas.com
  Copyright 2011-2016 PlayCanvas Ltd. All rights reserved.
  Do not distribute.
  Contains: https://github.com/tildeio/rsvp.js - see page for license information
 */
-var pc = {version:"0.182.0-dev", revision:"ca49cd4", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"0.182.0-dev", revision:"ca27cf5", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.")
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -96,6 +96,18 @@ if(!String.prototype.endsWith) {
     }
     return true
   }})
+}
+if(!String.prototype.includes) {
+  String.prototype.includes = function(search, start) {
+    if(typeof start !== "number") {
+      start = 0
+    }
+    if(start + search.length > this.length) {
+      return false
+    }else {
+      return this.indexOf(search, start) !== -1
+    }
+  }
 }
 ;(function() {
   if(typeof document === "undefined") {
@@ -615,8 +627,12 @@ pc.events = function() {
     if(this._callbacks && this._callbacks[name]) {
       length = this._callbacks[name].length;
       if(length) {
-        args = pc.makeArray(arguments);
-        args.shift();
+        if(arguments.length > 1) {
+          args = new Array(arguments.length - 1);
+          for(index = 1;index < arguments.length;index++) {
+            args[index - 1] = arguments[index]
+          }
+        }
         callbacks = this._callbacks[name].slice();
         var originalIndex = 0;
         for(index = 0;index < length;++index) {
@@ -3682,7 +3698,8 @@ pc.extend(pc, function() {
     this.device = graphicsDevice;
     this.definition = definition;
     this.ready = false;
-    this.device.fire("shader:compile:start", {timestamp:pc.now(), target:this});
+    var startTime = pc.now();
+    this.device.fire("shader:compile:start", {timestamp:startTime, target:this});
     var gl = this.device.gl;
     this.vshader = createShader(gl, gl.VERTEX_SHADER, definition.vshader);
     this.fshader = createShader(gl, gl.FRAGMENT_SHADER, definition.fshader);
@@ -3693,11 +3710,14 @@ pc.extend(pc, function() {
     if(definition.tag === pc.SHADERTAG_MATERIAL) {
       graphicsDevice._shaderStats.materialShaders++
     }
-    this.device.fire("shader:compile:end", {timestamp:pc.now(), target:this})
+    var endTime = pc.now();
+    this.device.fire("shader:compile:end", {timestamp:endTime, target:this});
+    this.device._shaderStats.compileTime += endTime - startTime
   };
   Shader.prototype = {link:function() {
     var gl = this.device.gl;
-    this.device.fire("shader:link:start", {timestamp:pc.now(), target:this});
+    var startTime = pc.now();
+    this.device.fire("shader:link:start", {timestamp:startTime, target:this});
     gl.linkProgram(this.program);
     if(!gl.getShaderParameter(this.vshader, gl.COMPILE_STATUS)) {
       logERROR("Failed to compile vertex shader:\n\n" + addLineNumbers(this.definition.vshader) + "\n\n" + gl.getShaderInfoLog(this.vshader))
@@ -3755,7 +3775,9 @@ pc.extend(pc, function() {
       }
     }
     this.ready = true;
-    this.device.fire("shader:link:end", {timestamp:pc.now(), target:this})
+    var endTime = pc.now();
+    this.device.fire("shader:link:end", {timestamp:endTime, target:this});
+    this.device._shaderStats.compileTime += endTime - startTime
   }, destroy:function() {
     var gl = this.device.gl;
     gl.deleteProgram(this.program)
@@ -4006,6 +4028,13 @@ pc.extend(pc, function() {
       this.glFilter = [gl.NEAREST, gl.LINEAR, gl.NEAREST_MIPMAP_NEAREST, gl.NEAREST_MIPMAP_LINEAR, gl.LINEAR_MIPMAP_NEAREST, gl.LINEAR_MIPMAP_LINEAR];
       this.glPrimitive = [gl.POINTS, gl.LINES, gl.LINE_LOOP, gl.LINE_STRIP, gl.TRIANGLES, gl.TRIANGLE_STRIP, gl.TRIANGLE_FAN];
       this.glType = [gl.BYTE, gl.UNSIGNED_BYTE, gl.SHORT, gl.UNSIGNED_SHORT, gl.INT, gl.UNSIGNED_INT, gl.FLOAT];
+      this.unmaskedRenderer = null;
+      this.unmaskedVendor = null;
+      this.extRendererInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      if(this.extRendererInfo) {
+        this.unmaskedRenderer = gl.getParameter(this.extRendererInfo.UNMASKED_RENDERER_WEBGL);
+        this.unmaskedVendor = gl.getParameter(this.extRendererInfo.UNMASKED_VENDOR_WEBGL)
+      }
       this.extTextureFloat = gl.getExtension("OES_texture_float");
       this.extTextureFloatLinear = gl.getExtension("OES_texture_float_linear");
       if(this.extTextureFloat) {
@@ -4135,8 +4164,9 @@ pc.extend(pc, function() {
       numUniforms -= 1;
       numUniforms -= 4 * 4;
       this.boneLimit = Math.floor(numUniforms / 4);
-      if(this.boneLimit > 110) {
-        this.boneLimit = 110
+      this.boneLimit = Math.min(this.boneLimit, 128);
+      if(this.unmaskedRenderer === "Mali-450 MP") {
+        this.boneLimit = 34
       }
       pc.events.attach(this);
       this.boundBuffer = null;
@@ -4151,8 +4181,9 @@ pc.extend(pc, function() {
       for(i = pc.PRIMITIVE_POINTS;i <= pc.PRIMITIVE_TRIFAN;i++) {
         this._primsPerFrame[i] = 0
       }
+      this._renderTargetCreationTime = 0;
       this._vram = {tex:0, vb:0, ib:0};
-      this._shaderStats = {vsCompiled:0, fsCompiled:0, linked:0, materialShaders:0};
+      this._shaderStats = {vsCompiled:0, fsCompiled:0, linked:0, materialShaders:0, compileTime:0};
       var bufferId = gl.createBuffer();
       var storage = new ArrayBuffer(16);
       gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
@@ -4182,6 +4213,7 @@ pc.extend(pc, function() {
     var target = this.renderTarget;
     if(target) {
       if(!target._glFrameBuffer) {
+        var startTime = pc.now();
         target._glFrameBuffer = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, target._glFrameBuffer);
         var colorBuffer = target._colorBuffer;
@@ -4219,6 +4251,7 @@ pc.extend(pc, function() {
           default:
             break
         }
+        this._renderTargetCreationTime += pc.now() - startTime
       }else {
         gl.bindFramebuffer(gl.FRAMEBUFFER, target._glFrameBuffer)
       }
@@ -5226,6 +5259,8 @@ pc.extend(pc, function() {
             if(source.rgbm) {
               value *= a * 8;
               value *= value
+            }else {
+              value = Math.pow(value, 2.2)
             }
             sh[coef1 + c] += value * weight1;
             sh[coef2 + c] += value * weight2 * dx;
@@ -5331,7 +5366,7 @@ pc.shaderChunks.aoSpecOccSimplePS = "uniform float material_occludeSpecularInten
 pc.shaderChunks.aoTexPS = "uniform sampler2D texture_aoMap;\nvoid applyAO(inout psInternalData data) {\n    data.ao = texture2D(texture_aoMap, $UV).$CH;\n    data.diffuseLight *= data.ao;\n}\n\n";
 pc.shaderChunks.aoVertPS = "void applyAO(inout psInternalData data) {\n    data.ao = saturate(vVertexColor.$CH);\n    data.diffuseLight *= data.ao;\n}\n\n";
 pc.shaderChunks.bakeLmEndPS = "\ngl_FragColor.rgb = data.diffuseLight;\ngl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5));\ngl_FragColor.rgb /= 8.0;\ngl_FragColor.a = clamp( max( max( gl_FragColor.r, gl_FragColor.g ), max( gl_FragColor.b, 1.0 / 255.0 ) ), 0.0,1.0 );\ngl_FragColor.a = ceil(gl_FragColor.a * 255.0) / 255.0;\ngl_FragColor.rgb /= gl_FragColor.a;\n\n";
-pc.shaderChunks.basePS = "\nuniform vec3 view_position;\n\nuniform vec3 light_globalAmbient;\n\nstruct psInternalData {\n    vec3 albedo;\n    vec3 specularity;\n    float glossiness;\n    vec3 emission;\n    vec3 normalW;\n    mat3 TBN;\n    vec3 viewDirW;\n    vec3 reflDirW;\n    vec3 diffuseLight;\n    vec3 specularLight;\n    vec4 reflection;\n    float alpha;\n    vec3 lightDirNormW;\n    vec3 lightDirW;\n    vec3 lightPosW;\n    float atten;\n    vec3 shadowCoord;\n    vec2 uvOffset;\n    vec3 normalMap;\n    float ao;\n};\n\nvoid getViewDir(inout psInternalData data) {\n    data.viewDirW = normalize(view_position - vPositionW);\n}\n\nvoid getReflDir(inout psInternalData data) {\n    data.reflDirW = normalize(-reflect(data.viewDirW, data.normalW));\n}\n\nvoid getLightDirPoint(inout psInternalData data, vec3 lightPosW) {\n    data.lightDirW = vPositionW - lightPosW;\n    data.lightDirNormW = normalize(data.lightDirW);\n    data.lightPosW = lightPosW;\n}\n\nfloat getFalloffLinear(inout psInternalData data, float lightRadius) {\n    float d = length(data.lightDirW);\n    return max(((lightRadius - d) / lightRadius), 0.0);\n}\n\nfloat square(float x) {\n    return x*x;\n}\n\nfloat saturate(float x) {\n    return clamp(x, 0.0, 1.0);\n}\n\nvec3 saturate(vec3 x) {\n    return clamp(x, vec3(0.0), vec3(1.0));\n}\n\nfloat getFalloffInvSquared(inout psInternalData data, float lightRadius) {\n    float sqrDist = dot(data.lightDirW, data.lightDirW);\n    float falloff = 1.0 / (sqrDist + 1.0);\n    float invRadius = 1.0 / lightRadius;\n\n    falloff *= 16.0;\n    falloff *= square( saturate( 1.0 - square( sqrDist * square(invRadius) ) ) );\n\n    return falloff;\n}\n\nfloat getSpotEffect(inout psInternalData data, vec3 lightSpotDirW, float lightInnerConeAngle, float lightOuterConeAngle) {\n    float cosAngle = dot(data.lightDirNormW, lightSpotDirW);\n    return smoothstep(lightOuterConeAngle, lightInnerConeAngle, cosAngle);\n}\n\nvoid processMetalness(inout psInternalData data, float metalness) {\n    const float dielectricF0 = 0.04;\n    data.specularity = mix(vec3(dielectricF0), data.albedo, metalness);\n    data.albedo *= 1.0 - metalness;\n}\n\n";
+pc.shaderChunks.basePS = "\nuniform vec3 view_position;\n\nuniform vec3 light_globalAmbient;\n\nfloat square(float x) {\n    return x*x;\n}\n\nfloat saturate(float x) {\n    return clamp(x, 0.0, 1.0);\n}\n\nvec3 saturate(vec3 x) {\n    return clamp(x, vec3(0.0), vec3(1.0));\n}\n\n";
 pc.shaderChunks.baseVS = "\nattribute vec3 vertex_position;\nattribute vec3 vertex_normal;\nattribute vec4 vertex_tangent;\nattribute vec2 vertex_texCoord0;\nattribute vec2 vertex_texCoord1;\nattribute vec4 vertex_color;\n\nuniform mat4 matrix_viewProjection;\nuniform mat4 matrix_model;\nuniform mat3 matrix_normal;\n\nstruct vsInternalData {\n    vec3 positionW;\n    mat4 modelMatrix;\n    mat3 normalMatrix;\n    vec3 lightPosW;\n    vec3 lightDirNormW;\n    vec3 normalW;\n};\n\n";
 pc.shaderChunks.combineDiffusePS = "vec3 combineColor(inout psInternalData data) {\n    return data.albedo * data.diffuseLight;\n}\n\n";
 pc.shaderChunks.combineDiffuseSpecularPS = "vec3 combineColor(inout psInternalData data) {\n    return mix(data.albedo * data.diffuseLight, data.specularLight + data.reflection.rgb * data.reflection.a, data.specularity);\n}\n\n";
@@ -5358,6 +5393,8 @@ pc.shaderChunks.envConstPS = "vec3 processEnvironment(vec3 color) {\n    return 
 pc.shaderChunks.envMultiplyPS = "uniform float skyboxIntensity;\nvec3 processEnvironment(vec3 color) {\n    return color * skyboxIntensity;\n}\n\n";
 pc.shaderChunks.extensionPS = "\n";
 pc.shaderChunks.extensionVS = "\n";
+pc.shaderChunks.falloffInvSquaredPS = "float getFalloffInvSquared(inout psInternalData data, float lightRadius) {\n    float sqrDist = dot(data.lightDirW, data.lightDirW);\n    float falloff = 1.0 / (sqrDist + 1.0);\n    float invRadius = 1.0 / lightRadius;\n\n    falloff *= 16.0;\n    falloff *= square( saturate( 1.0 - square( sqrDist * square(invRadius) ) ) );\n\n    return falloff;\n}\n\n";
+pc.shaderChunks.falloffLinearPS = "float getFalloffLinear(inout psInternalData data, float lightRadius) {\n    float d = length(data.lightDirW);\n    return max(((lightRadius - d) / lightRadius), 0.0);\n}\n\n";
 pc.shaderChunks.fixCubemapSeamsNonePS = "vec3 fixSeams(vec3 vec, float mipmapIndex) {\n    return vec;\n}\n\nvec3 fixSeams(vec3 vec) {\n    return vec;\n}\n\nvec3 fixSeamsStatic(vec3 vec, float invRecMipSize) {\n    return vec;\n}\n";
 pc.shaderChunks.fixCubemapSeamsStretchPS = "vec3 fixSeams(vec3 vec, float mipmapIndex) {\n    float scale = 1.0 - exp2(mipmapIndex) / 128.0;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\nvec3 fixSeams(vec3 vec) {\n    float scale = 1.0 - 1.0 / 128.0;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\nvec3 fixSeamsStatic(vec3 vec, float invRecMipSize) {\n    float scale = invRecMipSize;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\n\n";
 pc.shaderChunks.fogExpPS = "uniform vec3 fog_color;\nuniform float fog_density;\nvec3 addFog(inout psInternalData data, vec3 color) {\n    float depth = gl_FragCoord.z / gl_FragCoord.w;\n    float fogFactor = exp(-depth * fog_density);\n    fogFactor = clamp(fogFactor, 0.0, 1.0);\n    return mix(fog_color, color, fogFactor);\n}\n";
@@ -5378,10 +5415,12 @@ pc.shaderChunks.glossVertPS = "void getGlossiness(inout psInternalData data) {\n
 pc.shaderChunks.glossVertConstPS = "uniform float material_shininess;\nvoid getGlossiness(inout psInternalData data) {\n    data.glossiness = material_shininess * saturate(vVertexColor.$CH) + 0.0000001;\n}\n\n";
 pc.shaderChunks.instancingVS = "\nattribute vec4 instance_line1;\nattribute vec4 instance_line2;\nattribute vec4 instance_line3;\nattribute vec4 instance_line4;\n\n";
 pc.shaderChunks.lightDiffuseLambertPS = "float getLightDiffuse(inout psInternalData data) {\n    return max(dot(data.normalW, -data.lightDirNormW), 0.0);\n}\n\n";
+pc.shaderChunks.lightDirPointPS = "void getLightDirPoint(inout psInternalData data, vec3 lightPosW) {\n    data.lightDirW = vPositionW - lightPosW;\n    data.lightDirNormW = normalize(data.lightDirW);\n    data.lightPosW = lightPosW;\n}\n\n";
 pc.shaderChunks.lightmapSinglePS = "uniform sampler2D texture_lightMap;\nvoid addLightMap(inout psInternalData data) {\n    data.diffuseLight += $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n}\n\n";
 pc.shaderChunks.lightmapSingleVertPS = "void addLightMap(inout psInternalData data) {\n    data.diffuseLight += saturate(vVertexColor.$CH);\n}\n\n";
 pc.shaderChunks.lightSpecularBlinnPS = "// Energy-conserving (hopefully) Blinn-Phong\nfloat getLightSpecular(inout psInternalData data) {\n    vec3 h = normalize( -data.lightDirNormW + data.viewDirW );\n    float nh = max( dot( h, data.normalW ), 0.0 );\n\n    float specPow = exp2(data.glossiness * 11.0); // glossiness is linear, power is not; 0 - 2048\n    specPow = antiAliasGlossiness(data, specPow);\n\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    specPow = max(specPow, 0.0001);\n\n    return pow(nh, specPow) * (specPow + 2.0) / 8.0;\n}\n\n";
 pc.shaderChunks.lightSpecularPhongPS = "float getLightSpecular(inout psInternalData data) {\n    float specPow = data.glossiness;\n\n    specPow = antiAliasGlossiness(data, specPow);\n\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    return pow(max(dot(data.reflDirW, -data.lightDirNormW), 0.0), specPow + 0.0001);\n}\n\n";
+pc.shaderChunks.metalnessPS = "void processMetalness(inout psInternalData data, float metalness) {\n    const float dielectricF0 = 0.04;\n    data.specularity = mix(vec3(dielectricF0), data.albedo, metalness);\n    data.albedo *= 1.0 - metalness;\n}\n\n";
 pc.shaderChunks.metalnessConstPS = "uniform float material_metalness;\nvoid getSpecularity(inout psInternalData data) {\n    processMetalness(data, material_metalness);\n}\n\n";
 pc.shaderChunks.metalnessTexPS = "uniform sampler2D texture_metalnessMap;\nvoid getSpecularity(inout psInternalData data) {\n    processMetalness(data, texture2D(texture_metalnessMap, $UV).$CH);\n}\n\n";
 pc.shaderChunks.metalnessTexConstPS = "uniform sampler2D texture_metalnessMap;\nuniform float material_metalness;\nvoid getSpecularity(inout psInternalData data) {\n    processMetalness(data, texture2D(texture_metalnessMap, $UV).$CH * material_metalness);\n}\n\n";
@@ -5441,6 +5480,7 @@ pc.shaderChunks.particle_stretchVS = "    vec3 moveDir = particleVelocity * stre
 pc.shaderChunks.particle_TBNVS = "\n    mat3 rot3 = mat3(rotMatrix[0][0], rotMatrix[0][1], 0.0,        rotMatrix[1][0], rotMatrix[1][1], 0.0,        0.0, 0.0, 1.0);\n    localMat[2] *= -1.0;\n    ParticleMat = localMat * rot3;\n\n\n\n\n";
 pc.shaderChunks.particle_wrapVS = "\n    vec3 origParticlePos = particlePos;\n    particlePos -= matrix_model[3].xyz;\n    particlePos = mod(particlePos, wrapBounds) - wrapBounds * 0.5;\n    particlePos += matrix_model[3].xyz;\n    particlePosMoved = particlePos - origParticlePos;\n\n\n";
 pc.shaderChunks.prefilterCubemapPS = "varying vec2 vUv0;\n\nuniform samplerCube source;\nuniform vec4 params;\n\nfloat saturate(float x) {\n    return clamp(x, 0.0, 1.0);\n}\n\nfloat rnd(vec2 uv) {\n    return fract(sin(dot(uv, vec2(12.9898, 78.233) * 2.0)) * 43758.5453);\n}\n\nconst float PI = 3.14159265358979;\nvec3 hemisphereSample_cos(vec2 uv, mat3 vecSpace, vec3 cubeDir, float gloss) { // cos + lerped cone size (better than just lerped)\n    float phi = uv.y * 2.0 * PI;\n    float cosTheta = sqrt(1.0 - uv.x);\n    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);\n    vec3 sampleDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);\n    return normalize(mix(vecSpace * sampleDir, cubeDir, params.y));\n}\n\nvec3 hemisphereSample_phong(vec2 uv, mat3 vecSpace, vec3 cubeDir, float specPow) {\n    float phi = uv.y * 2.0 * PI;\n    float cosTheta = pow(1.0 - uv.x, 1.0 / (specPow + 1.0));\n    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);\n    vec3 sampleDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);\n    return vecSpace * sampleDir;\n}\n\nmat3 matrixFromVector(vec3 n) { // frisvad\n    float a = 1.0 / (1.0 + n.z);\n    float b = -n.x * n.y * a;\n    vec3 b1 = vec3(1.0 - n.x * n.x * a, b, -n.x);\n    vec3 b2 = vec3(b, 1.0 - n.y * n.y * a, -n.y);\n    return mat3(b1, b2, n);\n}\n\nvec4 encodeRGBM(vec3 color) { // modified RGBM\n    vec4 encoded;\n    encoded.rgb = pow(color.rgb, vec3(0.5));\n    encoded.rgb *= 1.0 / 8.0;\n\n    encoded.a = saturate( max( max( encoded.r, encoded.g ), max( encoded.b, 1.0 / 255.0 ) ) );\n    encoded.a = ceil(encoded.a * 255.0) / 255.0;\n\n    encoded.rgb /= encoded.a;\n    return encoded;\n}\n\nvoid main(void) {\n\n    vec2 st = vUv0 * 2.0 - 1.0;\n\n    if (params.w==1.0 || params.w==3.0) {\n        st = 2.0 * floor(gl_FragCoord.xy) / (params.z - 1.0) - 1.0;\n    }\n\n    float face = params.x;\n\n    vec3 vec;\n    if (face==0.0) {\n        vec = vec3(1, -st.y, -st.x);\n    } else if (face==1.0) {\n        vec = vec3(-1, -st.y, st.x);\n    } else if (face==2.0) {\n        vec = vec3(st.x, 1, st.y);\n    } else if (face==3.0) {\n        vec = vec3(st.x, -1, -st.y);\n    } else if (face==4.0) {\n        vec = vec3(st.x, -st.y, 1);\n    } else {\n        vec = vec3(-st.x, -st.y, -1);\n    }\n\n    mat3 vecSpace = matrixFromVector(normalize(vec));\n\n    vec3 color = vec3(0.0);\n    const int samples = $NUMSAMPLES;\n    vec3 vect;\n    for(int i=0; i<samples; i++) {\n        float sini = sin(float(i));\n        float cosi = cos(float(i));\n        float rand = rnd(vec2(sini, cosi));\n\n        vect = hemisphereSample_$METHOD(vec2(float(i) / float(samples), rand), vecSpace, vec, params.y);\n\n        color += $textureCube(source, vect).rgb;\n    }\n    color /= float(samples);\n\n    gl_FragColor = params.w < 2.0? vec4(color, 1.0) : encodeRGBM(color);\n}\n";
+pc.shaderChunks.reflDirPS = "void getReflDir(inout psInternalData data) {\n    data.reflDirW = normalize(-reflect(data.viewDirW, data.normalW));\n}\n\n";
 pc.shaderChunks.reflectionCubePS = "uniform samplerCube texture_cubeMap;\nuniform float material_reflectivity;\nvoid addReflection(inout psInternalData data) {\n    vec3 lookupVec = fixSeams(cubeMapProject(data.reflDirW));\n    lookupVec.x *= -1.0;\n    data.reflection += vec4($textureCubeSAMPLE(texture_cubeMap, lookupVec).rgb, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionDpAtlasPS = "uniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\n\nvec2 getDpAtlasUv(vec2 uv, float mip) {\n\n    vec4 rect;\n    float sx = saturate(mip - 2.0);\n    rect.x = sx * 0.5;\n\n    float t = mip - rect.x * 6.0;\n    float i = 1.0 - rect.x;\n    rect.y = min(t * 0.5, 0.75) * i + rect.x;\n\n    float st = saturate(t);\n    rect.z = (1.0 - st * 0.5) * i;\n    rect.w = rect.z * 0.5;\n\n    float rcRectZ = 1.0 / rect.z;\n    float scaleFactor = 0.00390625 * rcRectZ; // 0.0078125 = (256 + 2) / 256 - 1, 0.00390625 same for 512\n    vec2 scale = vec2(scaleFactor, scaleFactor * 2.0);\n    uv = uv * (vec2(1.0) - scale) + scale * 0.5;\n\n    uv = uv * rect.zw + rect.xy;\n\n    return uv;\n}\n\nvoid addReflection(inout psInternalData data) {\n\n    vec3 reflDir = normalize(cubeMapProject(data.reflDirW));\n\n    // Convert vector to DP coords\n    bool up = reflDir.y > 0.0;\n    float scale = 0.90909090909090909090909090909091;// 1.0 / 1.1;\n    vec3 reflDirWarp = reflDir.xzx * vec3(-0.25, 0.5, 0.25);\n    float reflDirVer = abs(reflDir.y) + 1.0;\n    reflDirWarp /= reflDirVer;\n    reflDirWarp *= scale;\n    reflDirWarp = vec3(0.75, 0.5, 0.25) - reflDirWarp;\n    vec2 tc = up? reflDirWarp.xy : reflDirWarp.zy;\n\n    float bias = saturate(1.0 - data.glossiness) * 5.0; // multiply by max mip level\n\n    float mip = floor(bias);\n    vec3 tex1 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n\n    mip = min(mip + 1.0, 5.0);\n    vec3 tex2 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n\n    tex1 = mix(tex1, tex2, fract(bias));\n    tex1 = processEnvironment(tex1);\n\n    data.reflection += vec4(tex1, material_reflectivity);\n}\n\n\n";
 pc.shaderChunks.reflectionPrefilteredCubePS = "uniform samplerCube texture_prefilteredCubeMap128;\nuniform samplerCube texture_prefilteredCubeMap64;\nuniform samplerCube texture_prefilteredCubeMap32;\nuniform samplerCube texture_prefilteredCubeMap16;\nuniform samplerCube texture_prefilteredCubeMap8;\nuniform samplerCube texture_prefilteredCubeMap4;\nuniform float material_reflectivity;\n\nvoid addReflection(inout psInternalData data) {\n\n    // Unfortunately, WebGL doesn't allow us using textureCubeLod. Therefore bunch of nasty workarounds is required.\n    // We fix mip0 to 128x128, so code is rather static.\n    // Mips smaller than 4x4 aren't great even for diffuse. Don't forget that we don't have bilinear filtering between different faces.\n\n    float bias = saturate(1.0 - data.glossiness) * 5.0; // multiply by max mip level\n    int index1 = int(bias);\n    int index2 = int(min(bias + 1.0, 7.0));\n\n    vec3 fixedReflDir = fixSeams(cubeMapProject(data.reflDirW), bias);\n    fixedReflDir.x *= -1.0;\n\n    vec4 cubes[6];\n    cubes[0] = textureCube(texture_prefilteredCubeMap128, fixedReflDir);\n    cubes[1] = textureCube(texture_prefilteredCubeMap64, fixedReflDir);\n    cubes[2] = textureCube(texture_prefilteredCubeMap32, fixedReflDir);\n    cubes[3] = textureCube(texture_prefilteredCubeMap16, fixedReflDir);\n    cubes[4] = textureCube(texture_prefilteredCubeMap8, fixedReflDir);\n    cubes[5] = textureCube(texture_prefilteredCubeMap4, fixedReflDir);\n\n    // Also we don't have dynamic indexing in PS, so...\n    vec4 cube[2];\n    for(int i = 0; i < 6; i++) {\n        if (i == index1) {\n            cube[0] = cubes[i];\n        }\n        if (i == index2) {\n            cube[1] = cubes[i];\n        }\n    }\n\n    // another variant\n    /*if (index1==0){ cube[0]=cubes[0];\n    }else if (index1==1){ cube[0]=cubes[1];\n    }else if (index1==2){ cube[0]=cubes[2];\n    }else if (index1==3){ cube[0]=cubes[3];\n    }else if (index1==4){ cube[0]=cubes[4];\n    }else if (index1==5){ cube[0]=cubes[5];}\n\n    if (index2==0){ cube[1]=cubes[0];\n    }else if (index2==1){ cube[1]=cubes[1];\n    }else if (index2==2){ cube[1]=cubes[2];\n    }else if (index2==3){ cube[1]=cubes[3];\n    }else if (index2==4){ cube[1]=cubes[4];\n    }else if (index2==5){ cube[1]=cubes[5];}*/\n\n    vec4 cubeFinal = mix(cube[0], cube[1], fract(bias));\n    vec3 refl = processEnvironment($DECODE(cubeFinal).rgb);\n\n    data.reflection += vec4(refl, material_reflectivity);\n}\n\n";
@@ -5464,6 +5504,7 @@ pc.shaderChunks.specularTexPS = "uniform sampler2D texture_specularMap;\nvoid ge
 pc.shaderChunks.specularTexConstPS = "uniform sampler2D texture_specularMap;\nuniform vec3 material_specular;\nvoid getSpecularity(inout psInternalData data) {\n    data.specularity = texture2D(texture_specularMap, $UV).$CH * material_specular;\n}\n\n";
 pc.shaderChunks.specularVertPS = "void getSpecularity(inout psInternalData data) {\n    data.specularity = saturate(vVertexColor.$CH);\n}\n\n";
 pc.shaderChunks.specularVertConstPS = "uniform vec3 material_specular;\nvoid getSpecularity(inout psInternalData data) {\n    data.specularity = saturate(vVertexColor.$CH) * material_specular;\n}\n\n";
+pc.shaderChunks.spotPS = "float getSpotEffect(inout psInternalData data, vec3 lightSpotDirW, float lightInnerConeAngle, float lightOuterConeAngle) {\n    float cosAngle = dot(data.lightDirNormW, lightSpotDirW);\n    return smoothstep(lightOuterConeAngle, lightInnerConeAngle, cosAngle);\n}\n\n";
 pc.shaderChunks.startPS = "\nvoid main(void) {\n    psInternalData data;\n\tdata.diffuseLight = vec3(0);\n\tdata.specularLight = vec3(0);\n    data.reflection = vec4(0);\n    data.specularity = vec3(0);\n\n\n";
 pc.shaderChunks.startVS = "\nvoid main(void) {\n    vsInternalData data;\n\n    gl_Position = getPosition(data);\n";
 pc.shaderChunks.tangentBinormalVS = "\nvec3 getTangent(inout vsInternalData data) {\n    return normalize(data.normalMatrix * vertex_tangent.xyz);\n}\n\nvec3 getBinormal(inout vsInternalData data) {\n    return cross(vNormalW, vTangentW) * vertex_tangent.w;\n}\n\n";
@@ -5478,6 +5519,7 @@ pc.shaderChunks.transformSkinnedVS = "mat4 getModelMatrix(inout vsInternalData d
 pc.shaderChunks.transformUv1VS = "mat4 getModelMatrix(inout vsInternalData data) {\n    return matrix_model;\n}\nvec4 getPosition(inout vsInternalData data) {\n    data.modelMatrix = getModelMatrix(data);\n    vec4 posW = data.modelMatrix * vec4(vertex_position, 1.0);\n    data.positionW = posW.xyz;\n    return vec4(vertex_texCoord1.xy * 2.0 - 1.0, 0.5, 1);\n}\nvec3 getWorldPosition(inout vsInternalData data) {\n    return data.positionW;\n}\n\n";
 pc.shaderChunks.uv0VS = "\nvec2 getUv0(inout vsInternalData data) {\n    return vertex_texCoord0;\n}\n";
 pc.shaderChunks.uv1VS = "\nvec2 getUv1(inout vsInternalData data) {\n    return vertex_texCoord1;\n}\n";
+pc.shaderChunks.viewDirPS = "void getViewDir(inout psInternalData data) {\n    data.viewDirW = normalize(view_position - vPositionW);\n}\n\n";
 pc.shaderChunks.viewNormalVS = "\nuniform mat4 matrix_view;\nvec3 getViewNormal(inout vsInternalData data) {\n    return mat3(matrix_view) * vNormalW;\n}\n";
 pc.programlib = {getSnippet:function(device, id) {
   var code = "";
@@ -6329,6 +6371,8 @@ pc.programlib.phong = {hashCode:function(str) {
   }
   code += varyings;
   code += chunks.basePS;
+  var codeBegin = code;
+  code = "";
   var numShadowLights = 0;
   for(i = 0;i < options.lights.length;i++) {
     lightType = options.lights[i].getType();
@@ -6416,6 +6460,9 @@ pc.programlib.phong = {hashCode:function(str) {
     }else {
       code += chunks.specularAaNonePS
     }
+    if(options.useMetalness) {
+      code += chunks.metalnessPS
+    }
     code += this._addMap(options.useMetalness ? "metalness" : "specular", options, chunks, uvOffset);
     code += this._addMap("gloss", options, chunks, uvOffset);
     if(options.fresnelModel > 0) {
@@ -6498,7 +6545,9 @@ pc.programlib.phong = {hashCode:function(str) {
       code += chunks.shadowVSPS
     }
   }
-  code += chunks.lightDiffuseLambertPS;
+  if(lighting) {
+    code += chunks.lightDiffuseLambertPS
+  }
   var useOldAmbient = false;
   if(options.useSpecular) {
     code += options.shadingModel === pc.SPECULAR_PHONG ? chunks.lightSpecularPhongPS : chunks.lightSpecularBlinnPS;
@@ -6529,6 +6578,16 @@ pc.programlib.phong = {hashCode:function(str) {
   if(options.alphaTest) {
     code += "   uniform float alpha_ref;\n"
   }
+  if(needsNormal) {
+    code += chunks.viewDirPS;
+    if(options.useSpecular) {
+      code += chunks.reflDirPS
+    }
+  }
+  var hasPointLights = false;
+  var usesLinearFalloff = false;
+  var usesInvSquaredFalloff = false;
+  var usesSpot = false;
   code += chunks.startPS;
   var opacityParallax = false;
   if(options.blendType === pc.BLEND_NONE && !options.alphaTest) {
@@ -6595,13 +6654,17 @@ pc.programlib.phong = {hashCode:function(str) {
         code += "   data.atten = 1.0;\n"
       }else {
         code += "   getLightDirPoint(data, light" + i + "_position);\n";
+        hasPointLights = true;
         if(light.getFalloffMode() == pc.LIGHTFALLOFF_LINEAR) {
-          code += "   data.atten = getFalloffLinear(data, light" + i + "_radius);\n"
+          code += "   data.atten = getFalloffLinear(data, light" + i + "_radius);\n";
+          usesLinearFalloff = true
         }else {
-          code += "   data.atten = getFalloffInvSquared(data, light" + i + "_radius);\n"
+          code += "   data.atten = getFalloffInvSquared(data, light" + i + "_radius);\n";
+          usesInvSquaredFalloff = true
         }
         if(lightType === pc.LIGHTTYPE_SPOT) {
-          code += "   data.atten *= getSpotEffect(data, light" + i + "_spotDirection, light" + i + "_innerConeAngle, light" + i + "_outerConeAngle);\n"
+          code += "   data.atten *= getSpotEffect(data, light" + i + "_spotDirection, light" + i + "_innerConeAngle, light" + i + "_outerConeAngle);\n";
+          usesSpot = true
         }
       }
       code += "   data.atten *= getLightDiffuse(data);\n";
@@ -6667,6 +6730,81 @@ pc.programlib.phong = {hashCode:function(str) {
   }
   code += "\n";
   code += getSnippet(device, "common_main_end");
+  if(hasPointLights) {
+    code = chunks.lightDirPointPS + code
+  }
+  if(usesLinearFalloff) {
+    code = chunks.falloffLinearPS + code
+  }
+  if(usesInvSquaredFalloff) {
+    code = chunks.falloffInvSquaredPS + code
+  }
+  if(usesSpot) {
+    code = chunks.spotPS + code
+  }
+  var structCode = "struct psInternalData {\n";
+  if(code.includes("data.reflection")) {
+    structCode += "vec4 reflection;\n"
+  }
+  if(code.includes("data.TBN")) {
+    structCode += "mat3 TBN;\n"
+  }
+  if(code.includes("data.albedo")) {
+    structCode += "vec3 albedo;\n"
+  }
+  if(code.includes("data.emission")) {
+    structCode += "vec3 emission;\n"
+  }
+  if(code.includes("data.normalW")) {
+    structCode += "vec3 normalW;\n"
+  }
+  if(code.includes("data.viewDirW")) {
+    structCode += "vec3 viewDirW;\n"
+  }
+  if(code.includes("data.reflDirW")) {
+    structCode += "vec3 reflDirW;\n"
+  }
+  if(code.includes("data.diffuseLight")) {
+    structCode += "vec3 diffuseLight;\n"
+  }
+  if(code.includes("data.specularLight")) {
+    structCode += "vec3 specularLight;\n"
+  }
+  if(code.includes("data.lightDirNormW")) {
+    structCode += "vec3 lightDirNormW;\n"
+  }
+  if(code.includes("data.lightDirW")) {
+    structCode += "vec3 lightDirW;\n"
+  }
+  if(code.includes("data.lightPosW")) {
+    structCode += "vec3 lightPosW;\n"
+  }
+  if(code.includes("data.shadowCoord")) {
+    structCode += "vec3 shadowCoord;\n"
+  }
+  if(code.includes("data.normalMap")) {
+    structCode += "vec3 normalMap;\n"
+  }
+  if(code.includes("data.specularity")) {
+    structCode += "vec3 specularity;\n"
+  }
+  if(code.includes("data.uvOffset")) {
+    structCode += "vec2 uvOffset;\n"
+  }
+  if(code.includes("data.glossiness")) {
+    structCode += "float glossiness;\n"
+  }
+  if(code.includes("data.alpha")) {
+    structCode += "float alpha;\n"
+  }
+  if(code.includes("data.atten")) {
+    structCode += "float atten;\n"
+  }
+  if(code.includes("data.ao")) {
+    structCode += "float ao;\n"
+  }
+  structCode += "};\n";
+  code = codeBegin + structCode + code;
   fshader = code;
   return{attributes:attributes, vshader:vshader, fshader:fshader, tag:pc.SHADERTAG_MATERIAL}
 }};
@@ -7161,8 +7299,8 @@ pc.extend(pc, function() {
 }());
 pc.extend(pc, function() {
   function sortDrawCalls(drawCallA, drawCallB) {
-    if(drawCallA.distSqr && drawCallB.distSqr) {
-      return drawCallB.distSqr - drawCallA.distSqr
+    if(drawCallA.zdist && drawCallB.zdist) {
+      return drawCallB.zdist - drawCallA.zdist
     }else {
       return drawCallB.key - drawCallA.key
     }
@@ -7472,6 +7610,8 @@ pc.extend(pc, function() {
     this._camerasRendered = 0;
     this._materialSwitches = 0;
     this._shadowMapUpdates = 0;
+    this._shadowMapTime = 0;
+    this._forwardTime = 0;
     this._cullTime = 0;
     var library = this.device.getProgramLibrary();
     this._depthShaderStatic = library.getProgram("depth", {skin:false});
@@ -7768,6 +7908,7 @@ pc.extend(pc, function() {
       }
     }
     var camPos = camera._node.getPosition();
+    var camFwd = camera._node.forward;
     for(i = 0;i < drawCallsCount;i++) {
       drawCall = drawCalls[i];
       visible = true;
@@ -7790,10 +7931,10 @@ pc.extend(pc, function() {
               var tempx = meshPos.x - camPos.x;
               var tempy = meshPos.y - camPos.y;
               var tempz = meshPos.z - camPos.z;
-              meshInstance.distSqr = tempx * tempx + tempy * tempy + tempz * tempz
+              meshInstance.zdist = tempx * camFwd.x + tempy * camFwd.y + tempz * camFwd.z
             }else {
-              if(meshInstance.distSqr !== undefined) {
-                delete meshInstance.distSqr
+              if(meshInstance.zdist !== undefined) {
+                delete meshInstance.zdist
               }
             }
           }
@@ -7874,6 +8015,7 @@ pc.extend(pc, function() {
       }
     }
     var minx, miny, minz, maxx, maxy, maxz, centerx, centery;
+    var shadowMapStartTime = pc.now();
     for(i = 0;i < lights.length;i++) {
       light = lights[i];
       var type = light.getType();
@@ -8091,6 +8233,7 @@ pc.extend(pc, function() {
         }
       }
     }
+    this._shadowMapTime = pc.now() - shadowMapStartTime;
     this.setCamera(camera);
     this.dispatchGlobalLights(scene);
     if(scene.fog !== pc.FOG_NONE) {
@@ -8132,6 +8275,7 @@ pc.extend(pc, function() {
     if(camera._depthTarget) {
       this.depthMapId.setValue(camera._depthTarget.colorBuffer)
     }
+    var forwardStartTime = pc.now();
     for(i = 0;i < drawCallsCount;i++) {
       drawCall = drawCalls[i];
       if(drawCall.command) {
@@ -8261,6 +8405,7 @@ pc.extend(pc, function() {
         prevLightMask = lightMask
       }
     }
+    this._forwardTime = pc.now() - forwardStartTime;
     device.setColorWrite(true, true, true, true);
     if(scene.immediateDrawCalls.length > 0) {
       scene.immediateDrawCalls = []
@@ -15238,6 +15383,8 @@ pc.extend(pc, function() {
     stats.materials = this.renderer._materialSwitches;
     stats.shaders = this.graphicsDevice._shaderSwitchesPerFrame;
     stats.shadowMapUpdates = this.renderer._shadowMapUpdates;
+    stats.shadowMapTime = this.renderer._shadowMapTime;
+    stats.forwardTime = this.renderer._forwardTime;
     var prims = this.graphicsDevice._primsPerFrame;
     stats.triangles = prims[pc.PRIMITIVE_TRIANGLES] / 3 + Math.max(prims[pc.PRIMITIVE_TRISTRIP] - 2, 0) + Math.max(prims[pc.PRIMITIVE_TRIFAN] - 2, 0);
     stats.cullTime = this.renderer._cullTime;
@@ -15469,7 +15616,7 @@ pc.extend(pc, function() {
   return{FILLMODE_NONE:"NONE", FILLMODE_FILL_WINDOW:"FILL_WINDOW", FILLMODE_KEEP_ASPECT:"KEEP_ASPECT", RESOLUTION_AUTO:"AUTO", RESOLUTION_FIXED:"FIXED", Application:Application}
 }());
 pc.ApplicationStats = function(device) {
-  this.frame = {fps:0, ms:0, dt:0, updateStart:0, updateTime:0, renderStart:0, renderTime:0, physicsStart:0, physicsTime:0, cullTime:0, triangles:0, otherPrimitives:0, shaders:0, materials:0, cameras:0, shadowMapUpdates:0, _timeToCountFrames:0, _fpsAccum:0};
+  this.frame = {fps:0, ms:0, dt:0, updateStart:0, updateTime:0, renderStart:0, renderTime:0, physicsStart:0, physicsTime:0, cullTime:0, triangles:0, otherPrimitives:0, shaders:0, materials:0, cameras:0, shadowMapUpdates:0, shadowMapTime:0, forwardTime:0, _timeToCountFrames:0, _fpsAccum:0};
   this.drawCalls = {forward:0, depth:0, shadow:0, immediate:0, misc:0, total:0, skinned:0, instanced:0, removedByInstancing:0};
   this.vram = device._vram;
   this.shaders = device._shaderStats;
@@ -17910,6 +18057,25 @@ pc.extend(pc, function() {
   pc.extend(SoundComponentSystem.prototype, {initializeComponentData:function(component, data, properties) {
     properties = ["volume", "pitch", "positional", "refDistance", "maxDistance", "rollOffFactor", "distanceModel", "slots", "enabled"];
     SoundComponentSystem._super.initializeComponentData.call(this, component, data, properties)
+  }, cloneComponent:function(entity, clone) {
+    var oldData = entity.sound.data;
+    var newData = {};
+    for(var key in oldData) {
+      if(oldData.hasOwnProperty(key)) {
+        newData[key] = oldData[key]
+      }
+    }
+    newData.slots = {};
+    for(var key in oldData.slots) {
+      var oldSlot = oldData.slots[key];
+      if(oldSlot instanceof pc.SoundSlot) {
+        newData.slots[key] = {name:oldSlot.name, volume:oldSlot.volume, pitch:oldSlot.pitch, loop:oldSlot.loop, duration:oldSlot.duration, startTime:oldSlot.startTime, overlap:oldSlot.overlap, autoPlay:oldSlot.autoPlay, asset:oldSlot.asset}
+      }else {
+        newData.slots[key] = oldSlot
+      }
+    }
+    newData.playingBeforeDisable = {};
+    return this.addComponent(clone, newData)
   }, onUpdate:function(dt) {
     var store = this.store;
     for(var id in store) {
@@ -19474,6 +19640,19 @@ pc.extend(pc, function() {
     properties.forEach(function(prop) {
       data[prop] = _data[prop]
     });
+    if(_data.hasOwnProperty("asset")) {
+      var idx = properties.indexOf("model");
+      if(idx !== -1) {
+        properties.splice(idx, 1)
+      }
+    }else {
+      if(_data.hasOwnProperty("model")) {
+        var idx = properties.indexOf("asset");
+        if(idx !== -1) {
+          properties.splice(idx, 1)
+        }
+      }
+    }
     if(!data.type) {
       data.type = component.data.type
     }
@@ -19574,7 +19753,8 @@ pc.extend(pc, function() {
   }, remove:function(entity, data) {
     var app = this.system.app;
     if(entity.rigidbody && entity.rigidbody.body) {
-      app.systems.rigidbody.removeBody(entity.rigidbody.body)
+      app.systems.rigidbody.removeBody(entity.rigidbody.body);
+      entity.rigidbody.disableSimulation()
     }
     if(entity.trigger) {
       entity.trigger.destroy();
@@ -19730,7 +19910,6 @@ pc.extend(pc, function() {
     if(data.asset !== null && component.enabled && component.entity.enabled) {
       this.loadModelAsset(component)
     }else {
-      data.model = null;
       this.doRecreatePhysicalShape(component)
     }
   }, loadModelAsset:function(component) {
@@ -19839,6 +20018,9 @@ pc.extend(pc, function() {
       }
     }
     if(this.data.initialized && this.data.type === "mesh") {
+      if(!newValue) {
+        this.data.model = null
+      }
       this.system.recreatePhysicalShapes(this)
     }
   }, onSetModel:function(name, oldValue, newValue) {
@@ -22107,7 +22289,8 @@ pc.extend(pc, function() {
         }
         url = pc.path.join(self.prefix, url)
       }
-      url += "?t=" + asset.file.hash;
+      var separator = url.indexOf("&") !== -1 ? "&" : "?";
+      url += separator + "t=" + asset.file.hash;
       asset.loading = true;
       self._loader.load(url, asset.type, function(err, resource) {
         asset.loaded = true;
@@ -23081,7 +23264,7 @@ pc.extend(pc, function() {
       return
     }
     var i;
-    if(node.model && node.model.model) {
+    if(node.model && node.model.model && node.model.enabled) {
       if(allNodes) {
         allNodes.push(node)
       }
@@ -23134,7 +23317,7 @@ pc.extend(pc, function() {
     this.scene = scene;
     this.renderer = renderer;
     this.assets = assets;
-    this._stats = {renderPasses:0, lightmapCount:0, lightmapMem:0, renderTime:0, shadersLinked:0}
+    this._stats = {renderPasses:0, lightmapCount:0, lightmapMem:0, totalRenderTime:0, forwardTime:0, fboTime:0, shadowMapTime:0, compileTime:0, shadersLinked:0}
   };
   Lightmapper.prototype = {calculateLightmapSize:function(node, nodesMeshInstances) {
     var sizeMult = this.scene.lightmapSizeMultiplier || 16;
@@ -23182,8 +23365,10 @@ pc.extend(pc, function() {
     var device = this.device;
     var scene = this.scene;
     var stats = this._stats;
-    stats.renderPasses = 0;
+    stats.renderPasses = stats.lightmapMem = stats.shadowMapTime = stats.forwardTime = 0;
     var startShaders = device._shaderStats.linked;
+    var startFboTime = device._renderTargetCreationTime;
+    var startCompileTime = device._shaderStats.compileTime;
     var allNodes = [];
     var nodesMeshInstances = [];
     if(!nodes) {
@@ -23275,8 +23460,14 @@ pc.extend(pc, function() {
       }
     }
     var origFog = scene.fog;
+    var origAmbientR = scene.ambientLight.r;
+    var origAmbientG = scene.ambientLight.g;
+    var origAmbientB = scene.ambientLight.b;
     var origDrawCalls = scene.drawCalls;
     scene.fog = pc.FOG_NONE;
+    scene.ambientLight.r = 0;
+    scene.ambientLight.g = 0;
+    scene.ambientLight.b = 0;
     if(!lmCamera) {
       lmCamera = new pc.Camera;
       lmCamera._node = new pc.GraphNode;
@@ -23320,7 +23511,8 @@ pc.extend(pc, function() {
       lmMaterial.chunks.outputAlphaPremulPS = "\n";
       lmMaterial.cull = pc.CULLFACE_NONE;
       lmMaterial.forceUv1 = true;
-      lmMaterial.update()
+      lmMaterial.update();
+      lmMaterial.updateShader(device, scene)
     }
     for(node = 0;node < nodes.length;node++) {
       rcv = nodesMeshInstances[node];
@@ -23414,6 +23606,8 @@ pc.extend(pc, function() {
         }
         lmCamera.setRenderTarget(targTmp);
         this.renderer.render(scene, lmCamera);
+        stats.shadowMapTime += this.renderer._shadowMapTime;
+        stats.forwardTime += this.renderer._forwardTime;
         stats.renderPasses++;
         lmaps[node] = texTmp;
         nodeTarg[node] = targTmp;
@@ -23472,10 +23666,15 @@ pc.extend(pc, function() {
     }
     scene.drawCalls = origDrawCalls;
     scene.fog = origFog;
+    scene.ambientLight.r = origAmbientR;
+    scene.ambientLight.g = origAmbientG;
+    scene.ambientLight.b = origAmbientB;
     scene._updateLightStats();
     this.device.fire("lightmapper:end", {timestamp:pc.now(), target:this});
-    stats.renderTime = pc.now() - startTime;
-    stats.shadersLinked = device._shaderStats.linked - startShaders
+    stats.totalRenderTime = pc.now() - startTime;
+    stats.shadersLinked = device._shaderStats.linked - startShaders;
+    stats.compileTime = device._shaderStats.compileTime - startCompileTime;
+    stats.fboTime = device._renderTargetCreationTime - startFboTime
   }};
   return{Lightmapper:Lightmapper, MASK_DYNAMIC:maskDynamic, MASK_BAKED:maskBaked, MASK_LIGHTMAP:maskLightmap}
 }());
