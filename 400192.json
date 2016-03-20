@@ -65,7 +65,7 @@
             "parent": "0cb1b19c-bc9b-4c63-a806-9c368840f81c", 
             "position": [
                 0, 
-                2, 
+                1.5, 
                 0
             ], 
             "resource_id": "005a0173-3cd8-4cc2-8472-bff7a373b4c8", 
@@ -242,13 +242,13 @@
                     "axis": 1, 
                     "enabled": true, 
                     "halfExtents": [
-                        1, 
-                        1, 
-                        1
+                        2, 
+                        2, 
+                        2
                     ], 
-                    "height": 1.05, 
-                    "radius": 0.9, 
-                    "type": "sphere"
+                    "height": 3.01, 
+                    "radius": 1.01,
+                    "type": "capsule"
                 }, 
                 "rigidbody": {
                     "angularDamping": 1, 
