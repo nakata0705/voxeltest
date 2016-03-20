@@ -81,7 +81,7 @@ pc.script.create('voxelEntity3', function (app) {
                 
                 // [ToDo] Use proper center and distance from model.
                 vx2.recreateModel(entity, true, this.castShadows, this.receiveShadows, [0, 0, 0], 6, app); // Only recreate data model for now
-                vx2.recreateRigidBodies(entity, [0, 0, 0], 6, app);
+                vx2.recreateRigidBodies(entity, [0, 0, 0], 6);
             }            
         },
                  

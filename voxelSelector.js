@@ -500,7 +500,7 @@ pc.script.create('voxelSelector', function (app) {
                 vx2.recreateModel(entity, isDataModel, castShadows, receiveShadows, targetChunk.position, 0, app);                    
                 if (isDataModel) {
                     // Recreate rigid bodies
-                    vx2.recreateRigidBodies(entity, targetChunk.position, 0, app); // Recreate rigid bodies
+                    vx2.recreateRigidBodies(entity, targetChunk.position, 0); // Recreate rigid bodies
                 }
                 
                 if (targetChunk.empty === true) {

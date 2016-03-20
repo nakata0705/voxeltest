@@ -142,10 +142,10 @@ vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShad
     app.scene.addModel(model);
 };
 
-vx2.recreateRigidBodies = function(targetEntity, center, distance, app) {
+vx2.recreateRigidBodies = function(targetEntity, center, distance) {
     if (targetEntity.needsRigidbody) {
         // Remove rigid bodies
-        vx2.removeRigidBodies(targetEntity, center, distance, app);
+        vx2.removeRigidBodies(targetEntity, center, distance);
         
         // Add collision component
         if (targetEntity.collision === undefined) {
@@ -163,7 +163,7 @@ vx2.recreateRigidBodies = function(targetEntity, center, distance, app) {
         var chunker = targetEntity.chunkerObject.dataChunker;
         var chunkerPivot = targetEntity.chunkerObject.chunkerPivot;
         var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
-        vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, targetEntity.chunkerObject.cubeSize, targetEntity, center, distance, app);
+        vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, targetEntity.chunkerObject.cubeSize, targetEntity, center, distance);
     }
 };
 
@@ -414,7 +414,7 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coord
     }
 };
 
-vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cubeSize, targetEntity, center ,distance, app) {
+vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cubeSize, targetEntity, center ,distance) {
     var nearby = chunker.nearbyChunksCoordinate(center, distance);
     
     // Calculate center offset
@@ -561,7 +561,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                         vx2.registerStaticRigidBody((x[2] + max[2]) * 0.5 + coordinateOffset[0] + chunker.chunkSize * chunk.position[2],
                                                     (x[1] + max[1]) * 0.5 + coordinateOffset[1] + chunker.chunkSize * chunk.position[1],
                                                     (x[0] + max[0]) * 0.5 + coordinateOffset[2] + chunker.chunkSize * chunk.position[0],
-                                                    parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m], app);
+                                                    parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m]);
                         chunkRigidBodyNum += 1;
                     }
                 }
@@ -576,7 +576,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
     }
 };
 
-vx2.registerStaticRigidBody = function(x, y, z, parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby, app) {
+vx2.registerStaticRigidBody = function(x, y, z, parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby) {
     printDebugMessage("(x, y, z) = (" + x + ", " + y + ", " + z + " parentEntityScale = " + parentEntityScale + " rigidBodyBoxScale = " + rigidBodyBoxScale, 8);
 
     var mass = 0; // Static volume which has infinite mass
@@ -638,6 +638,8 @@ vx2.registerStaticRigidBody = function(x, y, z, parentEntityScale, rigidBodyBoxS
     Ammo.destroy(motionState);
     Ammo.destroy(bodyInfo);
 
+	var app = pc.Application.getApplication();   
+	
     app.systems.rigidbody.addBody(body, pc.BODYGROUP_STATIC, pc.BODYMASK_NOT_STATIC);
     body.forceActivationState(pc.BODYFLAG_ACTIVE_TAG);
     body.activate();
