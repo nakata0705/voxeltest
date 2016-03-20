@@ -47,24 +47,18 @@ vx2.convert32bitRGBAto8bitRGBAArray = function(color) {
 };
                
 vx2.removeRigidBodies = function(targetEntity, center, distance) {
-    if (targetEntity.chunkerObject === undefined) {
-        return;
-    }
-   
+	// チャンカーオブジェクトが存在しないなら処理を行わない
+    if (!targetEntity.chunkerObject === undefined) return;
+    
+    // Dataチャンカーから中央から指定距離内にあるすべてのチャンク座標を取得   
 	var app = pc.Application.getApplication();   
     var chunker = targetEntity.chunkerObject.dataChunker;
     var nearby = chunker.nearbyChunksCoordinate(center, distance);
+    
+    // 見つかったそれぞれのチャンクに対してRigidBodyを削除する
     for (var n = 0; n < nearby.length; n++) {
-        var bodiesArray = chunker.getBodies(nearby[n][0], nearby[n][1], nearby[n][2]);
-        if (!bodiesArray) continue;
-        
-        // Remove all rigidbodies
-        for (var i = 0; i < bodiesArray.length; i++) {
-            app.systems.rigidbody.removeBody(bodiesArray[i]);
-            Ammo.destroy(bodiesArray[i].getCollisionShape());
-            Ammo.destroy(bodiesArray[i]);
-        }
-        chunker.setBodies(nearby[n][0], nearby[n][1], nearby[n][2], []);
+        var targetChunk = chunker.getChunk(nearby[n][0], nearby[n][1], nearby[n][2]);
+        if (targetChunk) targetChunk.destroyRigidBody();
     }    
 };
 
@@ -143,28 +137,25 @@ vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShad
 };
 
 vx2.recreateRigidBodies = function(targetEntity, center, distance) {
-    if (targetEntity.needsRigidbody) {
-        // Remove rigid bodies
-        vx2.removeRigidBodies(targetEntity, center, distance);
-        
-        // Add collision component
-        if (targetEntity.collision === undefined) {
-            targetEntity.addComponent("collision", {
-                type: "sphere",
-                radius: 0
-            });
-        }
-        if (targetEntity.trigger) {
-            targetEntity.trigger.destroy();
-            targetEntity.trigger = undefined;
-        }
-        
-        // Create rigid bodies
-        var chunker = targetEntity.chunkerObject.dataChunker;
-        var chunkerPivot = targetEntity.chunkerObject.chunkerPivot;
-        var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
-        vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, targetEntity.chunkerObject.cubeSize, targetEntity, center, distance);
+    if (!targetEntity.needsRigidbody) return;
+    
+    // 以前生成されたRigid Bodyを削除
+    vx2.removeRigidBodies(targetEntity, center, distance);
+    
+    // collisionコンポーネントをエンティティに追加
+    if (!targetEntity.collision) targetEntity.addComponent("collision", {　type: "sphere",　radius: 0　});
+    if (targetEntity.trigger) {
+        targetEntity.trigger.destroy();
+        targetEntity.trigger = undefined;
     }
+    
+    // ボクセル単位でのチャンカーの座標オフセットを求める
+    var chunker = targetEntity.chunkerObject.dataChunker;
+    var chunkerPivot = targetEntity.chunkerObject.chunkerPivot;
+    var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
+    
+    // 座標オフセットをもとにRigid Bodyを生成
+    vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, targetEntity.chunkerObject.cubeSize, targetEntity, center, distance);
 };
 
 vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coordinateOffset, material, transparentMaterial, center, distance, node, app) {    
@@ -558,10 +549,10 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                         var rigidBodyBoxScale = new pc.Vec3(max[2] - x[2] - vx2.rigidBodyGap,
                                                             max[1] - x[1] - vx2.rigidBodyGap,
                                                             max[0] - x[0] - vx2.rigidBodyGap);               
-                        vx2.registerStaticRigidBody((x[2] + max[2]) * 0.5 + coordinateOffset[0] + chunker.chunkSize * chunk.position[2],
-                                                    (x[1] + max[1]) * 0.5 + coordinateOffset[1] + chunker.chunkSize * chunk.position[1],
-                                                    (x[0] + max[0]) * 0.5 + coordinateOffset[2] + chunker.chunkSize * chunk.position[0],
-                                                    parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m]);
+                        chunk.setRigidBody((x[2] + max[2]) * 0.5 + coordinateOffset[0] + chunker.chunkSize * chunk.position[2],
+                                           (x[1] + max[1]) * 0.5 + coordinateOffset[1] + chunker.chunkSize * chunk.position[1],
+                                           (x[0] + max[0]) * 0.5 + coordinateOffset[2] + chunker.chunkSize * chunk.position[0],
+                                           parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m]);
                         chunkRigidBodyNum += 1;
                     }
                 }
@@ -574,75 +565,6 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
         }
         totalRigidBodyNum += chunkRigidBodyNum;
     }
-};
-
-vx2.registerStaticRigidBody = function(x, y, z, parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby) {
-    printDebugMessage("(x, y, z) = (" + x + ", " + y + ", " + z + " parentEntityScale = " + parentEntityScale + " rigidBodyBoxScale = " + rigidBodyBoxScale, 8);
-
-    var mass = 0; // Static volume which has infinite mass
-    
-    var cleanUpTarget = {};
-    var localVec = new Ammo.btVector3(parentEntityScale.x * rigidBodyBoxScale.x * vx2.meshScale * 0.5, parentEntityScale.y * rigidBodyBoxScale.y * vx2.meshScale * 0.5, parentEntityScale.z * rigidBodyBoxScale.z * vx2.meshScale * 0.5);
-    var shape = new Ammo.btBoxShape(localVec);
-
-    var entityPos = targetEntity.getPosition();
-    var entityRot = targetEntity.getParent().getLocalRotation();
-    
-    var chunk = chunker.getChunk(nearby[0], nearby[1], nearby[2]);
-    var bodiesArray = chunker.getBodies(nearby[0], nearby[1], nearby[2]);
-    if (bodiesArray === undefined) {
-        bodiesArray = chunker.setBodies(nearby[0], nearby[1], nearby[2], []);
-    }
-
-    var localPos = new pc.Vec3(x, y, z);
-    localPos.x = (localPos.x) * vx2.meshScale * parentEntityScale.x;
-    localPos.y = (localPos.y) * vx2.meshScale * parentEntityScale.y;
-    localPos.z = (localPos.z) * vx2.meshScale * parentEntityScale.z;            
-    localPos = entityRot.transformVector(localPos);
-
-    var transformPos = new pc.Vec3();
-    transformPos.add2(entityPos, localPos);
-
-    var ammoQuat = new Ammo.btQuaternion();
-    ammoQuat.setValue(entityRot.x, entityRot.y, entityRot.z, entityRot.w);
-
-    var startTransform = new Ammo.btTransform();
-    startTransform.setIdentity();
-    startTransform.getOrigin().setValue(transformPos.x, transformPos.y, transformPos.z);            
-    startTransform.setRotation(ammoQuat);
-
-    localVec.setValue(0, 0, 0);
-
-    var motionState = new Ammo.btDefaultMotionState(startTransform);
-    var bodyInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, localVec);
-
-    var body = new Ammo.btRigidBody(bodyInfo);
-
-    body.chunk = chunk;
-    body.entity = targetEntity; // This is necessary to have collision event work.
-    body.localPos = localPos;
-    body.setRestitution(0.5);
-    body.setFriction(0.5);
-    body.setDamping(0.5, 0.5);
-
-    localVec.setValue(0, 0, 0);
-    body.setLinearFactor(localVec);
-    localVec.setValue(0, 0, 0);
-    body.setAngularFactor(localVec);
-
-    bodiesArray.push(body);
-    
-    Ammo.destroy(localVec);
-    Ammo.destroy(ammoQuat);
-    Ammo.destroy(startTransform);
-    Ammo.destroy(motionState);
-    Ammo.destroy(bodyInfo);
-
-	var app = pc.Application.getApplication();   
-	
-    app.systems.rigidbody.addBody(body, pc.BODYGROUP_STATIC, pc.BODYMASK_NOT_STATIC);
-    body.forceActivationState(pc.BODYFLAG_ACTIVE_TAG);
-    body.activate();
 };
 
 // MagicaVoxelDefaultPaletteを24bitカラーに変換する(下位24bitをRGBAカラーとして予約)
