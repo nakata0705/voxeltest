@@ -136,28 +136,6 @@ vx2.recreateModel = function(targetEntity, isDataModel, castShadows, receiveShad
     app.scene.addModel(model);
 };
 
-vx2.recreateRigidBodies = function(targetEntity, center, distance) {
-    if (!targetEntity.needsRigidbody) return;
-    
-    // 以前生成されたRigid Bodyを削除
-    vx2.removeRigidBodies(targetEntity, center, distance);
-    
-    // collisionコンポーネントをエンティティに追加
-    if (!targetEntity.collision) targetEntity.addComponent("collision", {　type: "sphere",　radius: 0　});
-    if (targetEntity.trigger) {
-        targetEntity.trigger.destroy();
-        targetEntity.trigger = undefined;
-    }
-    
-    // ボクセル単位でのチャンカーの座標オフセットを求める
-    var chunker = targetEntity.chunkerObject.dataChunker;
-    var chunkerPivot = targetEntity.chunkerObject.chunkerPivot;
-    var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
-    
-    // 座標オフセットをもとにRigid Bodyを生成
-    vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, targetEntity.chunkerObject.cubeSize, targetEntity, center, distance);
-};
-
 vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, coordinateOffset, material, transparentMaterial, center, distance, node, app) {    
     var nearby = chunker.nearbyChunksCoordinate(center, distance);
     var i, j, n;
@@ -410,7 +388,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
     
     // Calculate center offset
     var pos = targetEntity.getPosition();
-    var parentEntityScale = targetEntity.getParent().getLocalScale();
+    var entityScale = targetEntity.getLocalScale();
     var totalRigidBodyNum = 0;
     
     // Register rigidbodies for each nearby chunk
@@ -481,7 +459,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                         max[u] = dimsU;
                         maxValid = [false, false, false];
 
-                        printDebugMessage("a = " + a.toString(16) + " (x, y, z) = (" + xx[2] + ", " + xx[1] + ", " + xx[0] + ") scale = " + parentEntityScale, 8);
+                        printDebugMessage("a = " + a.toString(16) + " (x, y, z) = (" + xx[2] + ", " + xx[1] + ", " + xx[0] + ") scale = " + entityScale, 8);
 
                         while (xx[d] < max[d]) {
                             for(xx[v] = x[v]; xx[v] < max[v]; ++xx[v]) {
@@ -552,7 +530,7 @@ vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cube
                         chunk.setRigidBody((x[2] + max[2]) * 0.5 + coordinateOffset[0] + chunker.chunkSize * chunk.position[2],
                                            (x[1] + max[1]) * 0.5 + coordinateOffset[1] + chunker.chunkSize * chunk.position[1],
                                            (x[0] + max[0]) * 0.5 + coordinateOffset[2] + chunker.chunkSize * chunk.position[0],
-                                           parentEntityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m]);
+                                           entityScale, rigidBodyBoxScale, targetEntity, chunker, nearby[m]);
                         chunkRigidBodyNum += 1;
                     }
                 }
