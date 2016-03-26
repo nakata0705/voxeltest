@@ -55,7 +55,7 @@ pc.script.create('voxelEntity3', function (app) {
                         
             switch (this.type) {
                 case 0:
-                    dataChunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
+                    dataChunker = new voxel.Chunker({ parentEntity: this.entity, chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
                     dataChunker.originalDims = [0, 0, 0];
                     chunkerObjectArray.push({name: "copiedVoxelEntity", dataChunker: dataChunker, pos: [0, 0, 0], chunkerPivot: [0.5, 0, 0.5], chunkScale: scale});
                     break;
@@ -100,7 +100,11 @@ pc.script.create('voxelEntity3', function (app) {
 		},
                  
         createVoxelChunk: function(low, high, x, y, z) {
-        	return new Chunk(low, high, function(i, j, k) { return { v: 0, f: 0 }; });
+        	// This function is called from Chunker with Chunker as "this".
+        	var parentEntity;
+        	if (this.entity) parentEntity = this.entity;
+        	else if (this.parentEntity) parentEntity = this.parentEntity;
+        	return new Chunk(parentEntity, low, high, function(i, j, k) { return { v: 0, f: 0 }; });
         },
         
         createChunkerFromVoxFile: function(resource) {
@@ -109,7 +113,7 @@ pc.script.create('voxelEntity3', function (app) {
             var scale = this.entity.getLocalScale().x;
             
             // Voxel adds 1 padding for each face. So chunkPad should be 2.
-            var chunker = new voxel.Chunker({ chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
+            var chunker = new voxel.Chunker({ parentEntity: this.entity, chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
             
             // Read header
             var index = 0;

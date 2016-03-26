@@ -9,7 +9,7 @@ var chunkPad = 2;
 //           0x1000000 - = ボクセルID0からのテクスチャボクセル
 // ボクセルフラグ: 未定
 
-function Chunk(lo, hi, fn) {
+function Chunk(entity, lo, hi, fn) {
 	lo[0]--;
 	lo[1]--;
 	lo[2]--;
@@ -28,15 +28,19 @@ function Chunk(lo, hi, fn) {
 			for(var i = lo[0]; i < hi[0]; i++) {
 				this.voxelArray.set(k-lo[2], j-lo[1], i-lo[0], fn(i, j, k));
 			}
+	// 親となるエンティティを記録
+	this.parentEntity = entity;
 };
 
 Chunk.prototype = {
 	get: function(x, y, z) {
 		return this.voxelArray.get(x, y, z);
 	},
+	
 	set: function(x, y, z, v) {
 		this.voxelArray.set(x, y, z, v);
 	},
+	
 	destroyRigidBody: function() {
 		var app = pc.Application.getApplication();   
         for (var i = 0; i < this.rigidBodyArray.length; i++) {
@@ -46,10 +50,12 @@ Chunk.prototype = {
         }
         this.rigidBodyArray = [];
 	},
+	
 	getRigidBodyArray: function() {
 		return this.rigidBodyArray;
 	},
-	setRigidBody: function(x, y, z, parentEntityScale, rigidBodyBoxScale, targetEntity) {
+	
+	setRigidBody: function(x, y, z, parentEntityScale, rigidBodyBoxScale) {
 	    printDebugMessage("(x, y, z) = (" + x + ", " + y + ", " + z + " parentEntityScale = " + parentEntityScale + " rigidBodyBoxScale = " + rigidBodyBoxScale, 8);
 	
 	    var mass = 0; // Static volume which has infinite mass
@@ -58,8 +64,8 @@ Chunk.prototype = {
 	    var localVec = new Ammo.btVector3(parentEntityScale.x * rigidBodyBoxScale.x * vx2.meshScale * 0.5, parentEntityScale.y * rigidBodyBoxScale.y * vx2.meshScale * 0.5, parentEntityScale.z * rigidBodyBoxScale.z * vx2.meshScale * 0.5);
 	    var shape = new Ammo.btBoxShape(localVec);
 	
-	    var entityPos = targetEntity.getPosition();
-	    var entityRot = targetEntity.getParent().getLocalRotation();
+	    var entityPos = this.parentEntity.getPosition();
+	    var entityRot = this.parentEntity.getLocalRotation();
 	    
 	    var localPos = new pc.Vec3(x, y, z);
 	    localPos.x = (localPos.x) * vx2.meshScale * parentEntityScale.x;
@@ -86,7 +92,7 @@ Chunk.prototype = {
 	    var body = new Ammo.btRigidBody(bodyInfo);
 	
 	    body.chunk = this;
-	    body.entity = targetEntity; // This is necessary to have collision event work.
+	    body.entity = this.parentEntity; // This is necessary to have collision event work.
 	    body.localPos = localPos;
 	    body.setRestitution(0.5);
 	    body.setFriction(0.5);
