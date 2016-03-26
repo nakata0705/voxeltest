@@ -81,7 +81,7 @@ pc.script.create('voxelEntity3', function (app) {
     		if (!this.entity.needsRigidbody) return;
     
 		    // 以前生成されたRigid Bodyを削除
-		    vx2.removeRigidBodies(this.entity, center, distance);
+		    this.removeRigidBodies(center, distance);
     
 		    // collisionコンポーネントをエンティティに追加
 		    if (!this.entity.collision) this.entity.addComponent("collision", {　type: "sphere",　radius: 0　});
@@ -97,6 +97,21 @@ pc.script.create('voxelEntity3', function (app) {
     
 		    // 座標オフセットをもとにRigid Bodyを生成
 		    vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, this.entity.chunkerObject.cubeSize, this.entity, center, distance);
+		},
+		
+		removeRigidBodies: function(center, distance) {
+			// チャンカーオブジェクトが存在しないなら処理を行わない
+		    if (!this.entity.chunkerObject === undefined) return;
+		    
+		    // Dataチャンカーから中央から指定距離内にあるすべてのチャンク座標を取得   
+			var chunker = this.entity.chunkerObject.dataChunker;
+		    var nearby = chunker.nearbyChunksCoordinate(center, distance);
+		    
+		    // 見つかったそれぞれのチャンクに対してRigidBodyを削除する
+		    for (var n = 0; n < nearby.length; n++) {
+		        var targetChunk = chunker.getChunk(nearby[n][0], nearby[n][1], nearby[n][2]);
+		        if (targetChunk) targetChunk.destroyRigidBody();
+		    }    
 		},
                  
         createVoxelChunk: function(low, high, x, y, z) {
