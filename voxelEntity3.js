@@ -69,7 +69,6 @@ pc.script.create('voxelEntity3', function (app) {
             this.entity.isChunkerEntity = true;
             this.entity.chunkerObject = chunkerObjectArray[0];
             this.entity.needsRigidbody = this.rigidbody;
-            this.entity.setLocalPosition(this.entity.chunkerObject.pos[0] * vx2.meshScale, this.entity.chunkerObject.pos[1] * vx2.meshScale, this.entity.chunkerObject.pos[2] * vx2.meshScale);
             this.entity.material = this.material;
             this.entity.transparentMaterial = this.transparentMaterial;
                 
@@ -97,7 +96,24 @@ pc.script.create('voxelEntity3', function (app) {
 		    var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
     
 		    // 座標オフセットをもとにRigid Bodyを生成
-		    vx2.createPlayCanvasRigidBodyForChunk(chunker, coordinateOffset, this.entity.chunkerObject.cubeSize, this.entity, center, distance);
+		    this.createPlayCanvasRigidBodyForChunk(center, distance);
+		},
+		
+		createPlayCanvasRigidBodyForChunk: function(center ,distance) {
+		    var nearby = this.entity.chunkerObject.dataChunker.nearbyChunksCoordinate(center, distance);
+		    var chunker = this.entity.chunkerObject.dataChunker;
+		    // Calculate center offset
+		    var pos = this.entity.getPosition();
+		    var entityScale = this.entity.getLocalScale();
+		    
+		    // Register rigidbodies for each nearby chunk
+		    for (var m = 0; m < nearby.length; m++) {
+		        var chunk = chunker.getChunk(nearby[m][0], nearby[m][1], nearby[m][2]);
+		        if (chunk === undefined) {
+		            continue;
+		        }
+		        chunk.createPlayCanvasRigidBody();
+		    }
 		},
 		
 		removeRigidBodies: function(center, distance) {

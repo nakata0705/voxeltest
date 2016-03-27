@@ -366,24 +366,6 @@ vx2.createPlayCanvasMeshInstanceForChunk = function (chunker, isDataModel, mater
     }
 };
 
-vx2.createPlayCanvasRigidBodyForChunk = function(chunker, coordinateOffset, cubeSize, targetEntity, center ,distance) {
-    var nearby = chunker.nearbyChunksCoordinate(center, distance);
-    
-    // Calculate center offset
-    var pos = targetEntity.getPosition();
-    var entityScale = targetEntity.getLocalScale();
-    var totalRigidBodyNum = 0;
-    
-    // Register rigidbodies for each nearby chunk
-    for (var m = 0; m < nearby.length; m++) {
-        var chunk = chunker.getChunk(nearby[m][0], nearby[m][1], nearby[m][2]);
-        if (chunk === undefined) {
-            continue;
-        }
-        chunk.createPlayCanvasRigidBody();
-    }
-};
-
 // MagicaVoxelDefaultPaletteを24bitカラーに変換する(下位24bitをRGBAカラーとして予約)
 for (var i = 0; i < 255; i++) {
     vx2.magicaVoxelDefaultPalette[i] = vx2.convert32bitRGBAto24bitRGBA(vx2.magicaVoxelDefaultPalette[i]);
