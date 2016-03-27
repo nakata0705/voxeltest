@@ -57,6 +57,7 @@ pc.script.create('voxelEntity3', function (app) {
                 case 0:
                     dataChunker = new voxel.Chunker({ parentEntity: this.entity, chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
                     dataChunker.originalDims = [0, 0, 0];
+                    dataChunker.chunkerPivot = [0.5, 0, 0.5];
                     chunkerObjectArray.push({name: "copiedVoxelEntity", dataChunker: dataChunker, pos: [0, 0, 0], chunkerPivot: [0.5, 0, 0.5], chunkScale: scale});
                     break;
                 case 1:
@@ -90,7 +91,7 @@ pc.script.create('voxelEntity3', function (app) {
 		        this.entity.trigger = undefined;
 		    }
     
-		    // ボクセル単位でのチャンカーの座標オフセットを求める
+		    // ボクセル単位でのチャンカーの座標オフセットを求める(チャンカーが初期サイズを持っていたら、それが)
 		    var chunker = this.entity.chunkerObject.dataChunker;
 		    var chunkerPivot = this.entity.chunkerObject.chunkerPivot;
 		    var coordinateOffset = [-(chunker.originalDims[2] * chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunkerPivot[2] + chunker.chunkPadHalf)];
@@ -119,7 +120,7 @@ pc.script.create('voxelEntity3', function (app) {
         	var parentEntity;
         	if (this.entity) parentEntity = this.entity;
         	else if (this.parentEntity) parentEntity = this.parentEntity;
-        	return new Chunk(parentEntity, low, high, function(i, j, k) { return { v: 0, f: 0 }; });
+        	return new Chunk(parentEntity, this, low, high, function(i, j, k) { return { v: 0, f: 0 }; });
         },
         
         createChunkerFromVoxFile: function(resource) {
@@ -129,6 +130,9 @@ pc.script.create('voxelEntity3', function (app) {
             
             // Voxel adds 1 padding for each face. So chunkPad should be 2.
             var chunker = new voxel.Chunker({ parentEntity: this.entity, chunkDistance: 0, chunkSize: 32, chunkPad: 2, cubeSize: scale * vx2.meshScale, generateVoxelChunk: this.createVoxelChunk});
+            
+            // Set CoordinateOffset here
+            chunker.chunkerPivot = [this.pivot.x, this.pivot.y, this.pivot.z];                    
             
             // Read header
             var index = 0;
@@ -177,6 +181,9 @@ pc.script.create('voxelEntity3', function (app) {
                         chunker.originalDims[1] = dataView.getUint32(index, true);
                         index += 4;
                         printDebugMessage("SIZE chunk: (x, y, z) = (" + chunker.originalDims[0] + ", " + chunker.originalDims[1] + ", " + chunker.originalDims[2] + ")", 8);
+                        
+                        // CoordinateOffsetをここで設定
+		    			chunker.coordinateOffset = [-(chunker.originalDims[2] * chunker.chunkerPivot[0] + chunker.chunkPadHalf), -(chunker.originalDims[1] * chunker.chunkerPivot[1] + chunker.chunkPadHalf), -(chunker.originalDims[0] * chunker.chunkerPivot[2] + chunker.chunkPadHalf)];
                         break;
                     case "XYZI":
                         var numVoxels = dataView.getUint32(index, true);
